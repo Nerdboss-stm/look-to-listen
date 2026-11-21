@@ -52,7 +52,7 @@ class GeminiPipelineController:
     def __init__(self) -> None:
         self.runtime: Any = None
         self.decisions_client = SpeakingDecisionClient()
-        self.leakage_guard = LeakageGuard(decision_threshold=0.9, guard_ms=750)
+        self.leakage_guard = LeakageGuard(decision_threshold=0.0, guard_ms=750)  # demo: guard off; Decisions API failed G3 at 0.9 and was dropping real target captions
         self.engine_a_buf = EngineALiveBuffer(chunk_hops=4)
         self.memory = ConversationMemory()
         self.agent = ListenerAgentService()

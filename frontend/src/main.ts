@@ -93,7 +93,7 @@ const endCardContentEl = document.getElementById("end-card-content") as HTMLElem
 const spotlightLineEl = document.getElementById("spotlight-line") as unknown as SVGPathElement;
 
 // Core pipeline instances
-const tracker = new MultiFaceTracker();
+const tracker = new MultiFaceTracker({ targetHoldMs: 4000, reappearMs: 8000, reappearDist: 0.6 }); // 4 s hold for demo: rides out brief face losses on a handheld phone
 const spotlightAnimator = new SpotlightAnimator();
 const cropper = new ClearVoiceCropper(0.8);
 const hopPacker = new HopPacker();
@@ -329,8 +329,27 @@ function getConsentedTargetFace(): Face | null {
 
 let lastConsentedTargetId: string | null = null;
 
+// Demo grace: keep the last consented target for 3 s through track flicker, so one
+// dropped detection does not mute the voice, wipe captions and reset the separator.
+let graceFace: Face | null = null;
+let graceNullSinceMs: number | null = null;
+const TARGET_GRACE_MS = 3000;
+
 function syncConsentedTargetState(): Face | null {
-  const consented = getConsentedTargetFace();
+  let consented = getConsentedTargetFace();
+  const graceNow = performance.now();
+  if (consented) {
+    graceFace = consented;
+    graceNullSinceMs = null;
+  } else if (graceFace) {
+    if (graceNullSinceMs === null) graceNullSinceMs = graceNow;
+    if (graceNow - graceNullSinceMs < TARGET_GRACE_MS) {
+      consented = graceFace;
+    } else {
+      graceFace = null;
+      graceNullSinceMs = null;
+    }
+  }
   const nextId = consented ? consented.id : null;
   voicePlayer.setTargetMuted(nextId === null);
 
