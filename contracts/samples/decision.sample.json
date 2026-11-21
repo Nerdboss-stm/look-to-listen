@@ -1,0 +1,9 @@
+{
+  "face_id": "face-1",
+  "window_t0": 1795192200000,
+  "window_t1": 1795192201000,
+  "p_speaking": 0.96,
+  "latency_ms": 182.5,
+  "calibrated": true,
+  "source": "decision-1"
+}

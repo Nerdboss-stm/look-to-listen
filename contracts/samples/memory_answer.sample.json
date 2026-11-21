@@ -1,0 +1,10 @@
+{
+  "question": "What did she say about meeting?",
+  "answer": "She suggested meeting near the front table after the session.",
+  "time": "00:01:42",
+  "clip": "clips/clip-001.mp4",
+  "confidence": 0.91,
+  "source": "argon",
+  "latency_ms": 2350,
+  "face_id": "face-1"
+}

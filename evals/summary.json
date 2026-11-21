@@ -1,0 +1,238 @@
+{
+  "generated_at": "2026-11-21T17:09:24.393950+00:00",
+  "set_c": {
+    "n_total": 0,
+    "n_two_talker": 0,
+    "n_three_talker": 0,
+    "arms": {
+      "b0_raw": {
+        "n_clips": 0,
+        "n_wer": 0,
+        "wer_clip_mean": null,
+        "wer_corpus": null,
+        "leak_clip_mean": null,
+        "leak_corpus": null,
+        "delay_p50_s": null,
+        "delay_p95_s": null,
+        "delay_n": 0
+      },
+      "engine_a": {
+        "n_clips": 0,
+        "n_wer": 0,
+        "wer_clip_mean": null,
+        "wer_corpus": null,
+        "leak_clip_mean": null,
+        "leak_corpus": null,
+        "delay_p50_s": null,
+        "delay_p95_s": null,
+        "delay_n": 0
+      },
+      "engine_b_gpu": {
+        "n_clips": 0,
+        "n_wer": 0,
+        "wer_clip_mean": null,
+        "wer_corpus": null,
+        "leak_clip_mean": null,
+        "leak_corpus": null,
+        "delay_p50_s": null,
+        "delay_p95_s": null,
+        "delay_n": 0
+      }
+    },
+    "gates": {
+      "engine_b_beats_raw": {
+        "passes": false,
+        "n_paired": 0,
+        "leak_drop": null,
+        "wer_delta": null,
+        "reason": "insufficient clips (0 < 30)"
+      },
+      "engine_a_beats_raw": {
+        "passes": false,
+        "n_paired": 0,
+        "leak_drop": null,
+        "wer_delta": null,
+        "reason": "insufficient clips (0 < 30)"
+      }
+    },
+    "where_it_breaks": {
+      "talkers": {},
+      "angle": {},
+      "distance_m": {},
+      "noise_level": {},
+      "occlusion": {},
+      "network": {}
+    }
+  },
+  "set_d": {
+    "n": 0,
+    "correct": 0,
+    "threshold": 0.9,
+    "accuracy": null,
+    "latency_p50_ms": null,
+    "latency_p95_ms": null,
+    "ece": null,
+    "at8_pass": false,
+    "bins": [
+      {
+        "bin_start": 0.0,
+        "bin_end": 0.1,
+        "count": 0,
+        "mean_p": null,
+        "empirical_rate": null
+      },
+      {
+        "bin_start": 0.1,
+        "bin_end": 0.2,
+        "count": 0,
+        "mean_p": null,
+        "empirical_rate": null
+      },
+      {
+        "bin_start": 0.2,
+        "bin_end": 0.3,
+        "count": 0,
+        "mean_p": null,
+        "empirical_rate": null
+      },
+      {
+        "bin_start": 0.3,
+        "bin_end": 0.4,
+        "count": 0,
+        "mean_p": null,
+        "empirical_rate": null
+      },
+      {
+        "bin_start": 0.4,
+        "bin_end": 0.5,
+        "count": 0,
+        "mean_p": null,
+        "empirical_rate": null
+      },
+      {
+        "bin_start": 0.5,
+        "bin_end": 0.6,
+        "count": 0,
+        "mean_p": null,
+        "empirical_rate": null
+      },
+      {
+        "bin_start": 0.6,
+        "bin_end": 0.7,
+        "count": 0,
+        "mean_p": null,
+        "empirical_rate": null
+      },
+      {
+        "bin_start": 0.7,
+        "bin_end": 0.8,
+        "count": 0,
+        "mean_p": null,
+        "empirical_rate": null
+      },
+      {
+        "bin_start": 0.8,
+        "bin_end": 0.9,
+        "count": 0,
+        "mean_p": null,
+        "empirical_rate": null
+      },
+      {
+        "bin_start": 0.9,
+        "bin_end": 1.0,
+        "count": 0,
+        "mean_p": null,
+        "empirical_rate": null
+      }
+    ]
+  },
+  "set_r": {
+    "n": 0,
+    "point_correct": 0,
+    "point_accuracy": null,
+    "hook_denied": 0,
+    "hook_block_rate": null,
+    "latency_p50_ms": null,
+    "at12_pass": false
+  },
+  "voice_delay": {
+    "n_hops": 375,
+    "n_hops_live": 375,
+    "n_hops_test": 190,
+    "voice_delay_p50_ms": 1111.7,
+    "voice_delay_p95_ms": 2585.5,
+    "rtt_p50_ms": 461.7,
+    "rtt_p95_ms": 1935.5,
+    "gpu_p50_ms": 128.9,
+    "max_gap_ms": null,
+    "at4_delay_pass": true
+  },
+  "gate_log_count": 5,
+  "gate_log": [
+    {
+      "gate": "G1-GPU",
+      "run": "1",
+      "time_et": "10:58",
+      "model": "AV_MossFormer2_TSE_16K",
+      "thinking": "",
+      "input": "3 s window (random audio + 75 frames) on the RTX 4090 pod",
+      "correct": "",
+      "total": "7",
+      "latency_ms": "131",
+      "pass": "yes",
+      "notes": "worst 131 ms; 2 s window 115 ms; torch 2.8.0+cu129"
+    },
+    {
+      "gate": "G7-net",
+      "run": "1",
+      "time_et": "11:01",
+      "model": "",
+      "thinking": "",
+      "input": "TCP connect laptop to pod SSH port (venue Wi-Fi)",
+      "correct": "",
+      "total": "15",
+      "latency_ms": "42",
+      "pass": "info",
+      "notes": "ping 46 ms avg; full G7 runs after E2"
+    },
+    {
+      "gate": "G7",
+      "run": "1",
+      "time_et": "11:15",
+      "model": "AV_MossFormer2_TSE_16K",
+      "thinking": "",
+      "input": "venue Wi-Fi, 50 live hops of 50 KB",
+      "correct": "",
+      "total": "50",
+      "latency_ms": "240",
+      "pass": "yes",
+      "notes": "p95 467 ms; max 689 ms; gpu p50 129 ms; 0 merged; 0 errors"
+    },
+    {
+      "gate": "G5",
+      "run": "1",
+      "time_et": "11:39",
+      "model": "antigravity-preview-09-2026",
+      "thinking": "",
+      "input": "4 checks: gemini-4-neon model, client function tool, pre_tool_execution deny+retry hook, 30-min trigger",
+      "correct": "4",
+      "total": "4",
+      "latency_ms": "6142",
+      "pass": "yes",
+      "notes": "neon accepted (6142 ms); client tool requires_action+function_result OK (env_id required); pre_tool_execution hook saw execute_code/write_file/read_file/stat_file (not client tool), deny+retry OK (26504 ms); */30 trigger create+delete OK (475 ms)"
+    },
+    {
+      "gate": "G7",
+      "run": "hotspot",
+      "time_et": "11:58",
+      "model": "AV_MossFormer2_TSE_16K",
+      "thinking": "",
+      "input": "phone hotspot, 50 live hops 50 KB each",
+      "correct": "",
+      "total": "50",
+      "latency_ms": "458",
+      "pass": "yes",
+      "notes": "p95 1567 ms; max 1865 ms; gpu p50 129 ms; p95 131 ms; queue p50 0 ms; 0 merged; 0 errors"
+    }
+  ]
+}

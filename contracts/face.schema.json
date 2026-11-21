@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://look-to-listen.local/contracts/face.schema.json",
+  "title": "Face",
+  "description": "A tracked face in the live camera feed, with landmarks, mouth-open ratio, assigned speaker color, and consent status.",
+  "type": "object",
+  "required": ["id", "box", "lips", "mouth_open", "color", "consent"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Stable track identifier for this face during the session (e.g. 'face-1')."
+    },
+    "box": {
+      "type": "object",
+      "description": "Normalized face bounding box in [0, 1] relative to video frame width and height.",
+      "required": ["x", "y", "w", "h"],
+      "properties": {
+        "x": { "type": "number", "minimum": 0, "maximum": 1 },
+        "y": { "type": "number", "minimum": 0, "maximum": 1 },
+        "w": { "type": "number", "minimum": 0, "maximum": 1 },
+        "h": { "type": "number", "minimum": 0, "maximum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "lips": {
+      "type": "array",
+      "description": "Normalized [x, y] lip contour landmark coordinates in [0, 1] from MediaPipe Face Landmarker.",
+      "items": {
+        "type": "array",
+        "prefixItems": [
+          { "type": "number", "minimum": 0, "maximum": 1 },
+          { "type": "number", "minimum": 0, "maximum": 1 }
+        ],
+        "minItems": 2,
+        "maxItems": 2
+      }
+    },
+    "mouth_open": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Mouth-open ratio (inner lip vertical gap divided by mouth width). Used for UI telemetry and FB6 uncalibrated fallback."
+    },
+    "color": {
+      "type": "string",
+      "pattern": "^#[0-9a-fA-F]{6}$",
+      "description": "Assigned high-contrast hex color for this speaker."
+    },
+    "consent": {
+      "type": "object",
+      "required": ["given", "by", "time"],
+      "properties": {
+        "given": {
+          "type": "boolean",
+          "description": "Whether this person has explicitly consented to captioning and saving."
+        },
+        "by": {
+          "type": ["string", "null"],
+          "description": "Name or identifier of the person or operator who recorded consent, or null if not given."
+        },
+        "time": {
+          "type": ["string", "null"],
+          "description": "ISO-8601 timestamp when consent was recorded, or null if not given."
+        }
+      },
+      "additionalProperties": false
+    },
+    "is_target": {
+      "type": "boolean",
+      "description": "Optional convenience flag indicating whether this face is currently the active target."
+    },
+    "label": {
+      "type": ["string", "null"],
+      "description": "Optional display name for a consenting speaker."
+    }
+  },
+  "additionalProperties": false
+}

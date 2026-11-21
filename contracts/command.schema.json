@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://look-to-listen.local/contracts/command.schema.json",
+  "title": "RobotCommand",
+  "description": "A spoken robot command attributed to a face, with Hydrogen pointing result and command-hook status.",
+  "type": "object",
+  "required": [
+    "command_id",
+    "face_id",
+    "text",
+    "target_face_id",
+    "point",
+    "object_label"
+  ],
+  "properties": {
+    "command_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique identifier for this robot command event."
+    },
+    "face_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "ID of the face that spoke the command."
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Spoken command text (e.g. 'Hand me the bottle')."
+    },
+    "target_face_id": {
+      "type": ["string", "null"],
+      "description": "ID of the active target face at the time the command was issued."
+    },
+    "point": {
+      "type": ["array", "null"],
+      "description": "Hydrogen Robotics ER pointing coordinate [y, x] normalized to [0, 1000], or null if blocked or no object matched.",
+      "prefixItems": [
+        { "type": "number", "minimum": 0, "maximum": 1000 },
+        { "type": "number", "minimum": 0, "maximum": 1000 }
+      ],
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "object_label": {
+      "type": ["string", "null"],
+      "description": "Label of the pointed object, or null if blocked or not found."
+    },
+    "allowed": {
+      "type": "boolean",
+      "description": "Whether gate_command.py permitted robot_act to execute (true only when face_id === target_face_id)."
+    },
+    "hook_reason": {
+      "type": ["string", "null"],
+      "description": "Human-readable reason from gate_command.py when allowed is false (or approval note)."
+    },
+    "latency_ms": {
+      "type": "number",
+      "minimum": 0,
+      "description": "End-to-end latency in milliseconds for pointing and hook evaluation."
+    },
+    "time": {
+      "type": "string",
+      "description": "ISO-8601 timestamp when the command was processed."
+    }
+  },
+  "additionalProperties": false
+}

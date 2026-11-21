@@ -1,0 +1,838 @@
+/* Self-hosted Atkinson Hyperlegible Next & Mono (zero CDN calls) */
+@import "@fontsource/atkinson-hyperlegible-next/400.css";
+@import "@fontsource/atkinson-hyperlegible-next/500.css";
+@import "@fontsource/atkinson-hyperlegible-next/600.css";
+@import "@fontsource/atkinson-hyperlegible-next/700.css";
+@import "@fontsource/atkinson-hyperlegible-next/800.css";
+@import "@fontsource/atkinson-hyperlegible-mono/400.css";
+@import "@fontsource/atkinson-hyperlegible-mono/600.css";
+@import "@fontsource/atkinson-hyperlegible-mono/700.css";
+@import "@fontsource/atkinson-hyperlegible-mono/800.css";
+
+/* DESIGN.md exact tokens: Dark (default) */
+:root {
+  --bg: #07090C;
+  --panel: #10141A;
+  --hairline: #232A33;
+  --text: #FFFFFF;
+  --label: #A9B4C2;
+  --raw-words: #D0D7E0;
+  --speaker-a: #FFB000;
+  --speaker-b: #4CC3FF;
+  --speaker-c: #FF7AB6;
+  --speaker-d: #34D399;
+  --warn: #FFD60A;
+  --bad: #FF453A;
+  --badge-ink: #07090C;
+
+  --font-words: "Atkinson Hyperlegible Next", Inter, sans-serif;
+  --font-mono: "Atkinson Hyperlegible Mono", "JetBrains Mono", monospace;
+}
+
+/* DESIGN.md exact tokens: Bright room (press B) */
+body.bright-room {
+  --bg: #FFFFFF;
+  --panel: #F2F4F7;
+  --hairline: #D0D5DD;
+  --text: #0A0C10;
+  --label: #475467;
+  --raw-words: #344054;
+  --speaker-a: #B25E00;
+  --speaker-b: #0060A8;
+  --speaker-c: #B0245F;
+  --speaker-d: #067647;
+  --warn: #8A6D00;
+  --bad: #C4140A;
+  --badge-ink: #FFFFFF;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-words);
+  font-size: 18px;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Letterboxed viewport holding the fixed 1920x1080 stage (never reflows) */
+.stage-viewport {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.stage {
+  position: absolute;
+  width: 1920px;
+  height: 1080px;
+  padding: 24px;
+  display: grid;
+  grid-template-columns: 1440px 416px;
+  gap: 16px;
+  background: var(--bg);
+  transform-origin: top left;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.hidden-until-value {
+  visibility: hidden;
+}
+
+/* Main Column: 1440 px wide */
+.main-col {
+  width: 1440px;
+  height: 1032px;
+  display: grid;
+  grid-template-rows: 640px 376px;
+  gap: 16px;
+}
+
+/* Camera Box: 1440 x 640, corner radius <= 8 px, no drop shadow */
+.camera-box {
+  position: relative;
+  width: 1440px;
+  height: 640px;
+  background: #000000;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+#camera-video {
+  position: absolute;
+  inset: 0;
+  width: 1440px;
+  height: 640px;
+  object-fit: cover;
+}
+
+#overlay-canvas {
+  position: absolute;
+  inset: 0;
+  width: 1440px;
+  height: 640px;
+  cursor: crosshair;
+}
+
+/* Camera HUD controls (nothing under 18 px, no blur, no gradient, radius <= 8 px).
+   Auto-hides after 3 s without mouse movement and reappears on mouse move. */
+.camera-controls {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 4;
+  display: flex;
+  gap: 8px;
+  transition: opacity 150ms ease-out;
+}
+
+.stage-btn {
+  font-family: var(--font-words);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 7px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--hairline);
+  background: var(--panel);
+  color: var(--text);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.stage-btn:hover {
+  border-color: var(--label);
+}
+
+/* Wall clock: top right of camera, 28 px mono, seconds shown + 1 Hz LIVE dot */
+.wall-clock-wrap {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px;
+  background: var(--panel);
+  border: 1px solid var(--hairline);
+  border-radius: 6px;
+  pointer-events: none;
+}
+
+@keyframes live-blink {
+  0%, 49.9% { opacity: 1; }
+  50%, 100% { opacity: 0.2; }
+}
+
+.live-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 5px;
+  background: var(--speaker-a);
+  animation: live-blink 1s infinite;
+}
+
+.live-word {
+  display: inline-block;
+  width: 5.2ch;
+  text-align: left;
+  font-family: var(--font-words);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--label);
+}
+
+.wall-clock {
+  display: inline-block;
+  width: 8ch;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text);
+}
+
+/* Bottom-left speaker consent chips (also auto-hide after 3 s without mouse movement) */
+.face-bar {
+  position: absolute;
+  bottom: 14px;
+  left: 14px;
+  z-index: 4;
+  display: flex;
+  gap: 8px;
+  transition: opacity 150ms ease-out;
+}
+
+.stage.controls-idle .camera-controls,
+.stage.controls-idle .face-bar {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.face-consent-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--panel);
+  border: 1px solid var(--hairline);
+  border-radius: 6px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.camera-error {
+  position: absolute;
+  bottom: 14px;
+  right: 14px;
+  z-index: 4;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--bad);
+  background: var(--panel);
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--hairline);
+}
+.camera-error:empty {
+  display: none;
+}
+
+/* Bottom Lanes: two columns of 712 x 376 */
+.lanes-row {
+  width: 1440px;
+  height: 376px;
+  display: grid;
+  grid-template-columns: 712px 712px;
+  gap: 16px;
+}
+
+.lane-panel {
+  width: 712px;
+  height: 376px;
+  background: var(--panel);
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.lane-header {
+  height: 76px;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--hairline);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.lane-header-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Lane headers: 22 px caps with 0.08em tracking */
+.lane-title {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--label);
+}
+
+/* Target header letter badge + color chip, crossfades over 150 ms */
+.target-header-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 6px;
+  font-size: 20px;
+  font-weight: 800;
+  background: var(--speaker-a);
+  color: var(--badge-ink);
+  transition: background-color 150ms ease-out, opacity 150ms ease-out;
+}
+
+.lane-leak-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Lined up on the exact same vertical midline and 22 px cap style as .lane-title */
+.lane-leak-label {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--label);
+}
+
+/* Counters: 56 px, tabular mono, fixed width so D3 layout shift is 0 */
+.counter-56 {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 56px;
+  font-weight: 700;
+  line-height: 1;
+  width: 128px;
+  min-width: 128px;
+  max-width: 128px;
+  min-height: 56px;
+  text-align: right;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+/* Lane body: newest line at the bottom, left aligned */
+.lane-body {
+  flex: 1;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 10px;
+  overflow: hidden;
+  text-align: left;
+}
+
+/* Empty state: "Waiting for speech" in label color, 22 px */
+.lane-empty {
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--label);
+  text-align: left;
+}
+
+@keyframes word-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.caption-line {
+  line-height: 1.25;
+  text-align: left;
+  word-break: break-word;
+}
+
+.caption-line-new {
+  animation: word-fade-in 120ms ease-out;
+}
+
+/* Raw lane: 38 px; unattributed words in --raw-words, attributed in speaker color */
+.lane-body-raw .caption-line {
+  font-size: 38px;
+  font-weight: 600;
+  color: var(--raw-words);
+}
+
+/* Target lane: 44 px, white (--text) words */
+.lane-body-target .caption-line {
+  font-size: 44px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* Interim words: 70% opacity, at most 2 lines */
+.caption-interim {
+  opacity: 0.7 !important;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+/* Older lines fade to 80%, 60% and 40% */
+.age-0 { opacity: 1; }
+.age-1 { opacity: 0.8; }
+.age-2 { opacity: 0.6; }
+.age-3 { opacity: 0.4; }
+
+.speaker-letter-badge {
+  display: inline-block;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.2;
+  padding: 2px 8px;
+  border-radius: 5px;
+  margin-right: 10px;
+  vertical-align: middle;
+  color: var(--badge-ink);
+}
+
+/* Side Strip: 416 px wide, top to bottom: DELAY, ENGINE, AGENT, MEMORY, ROBOT */
+.side-strip {
+  width: 416px;
+  height: 1032px;
+  display: grid;
+  grid-template-rows: 208px 84px 266px 218px 208px;
+  gap: 12px;
+}
+
+.side-panel {
+  width: 416px;
+  background: var(--panel);
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.side-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Side labels: 20 px */
+.side-label {
+  font-size: 20px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--label);
+}
+
+.side-meta {
+  display: inline-block;
+  width: 15ch;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--label);
+  white-space: nowrap;
+}
+
+.side-empty {
+  font-size: 18px;
+  color: var(--label);
+}
+
+/* 1. DELAY */
+.delay-row {
+  display: grid;
+  grid-template-columns: 1fr 196px;
+  align-items: center;
+  gap: 12px;
+  height: 68px;
+}
+
+.delay-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.delay-sub-label {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--label);
+}
+
+.delay-bar-track {
+  position: relative;
+  width: 100%;
+  height: 12px;
+  background: var(--bg);
+  border: 1px solid var(--hairline);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.delay-bar-fill {
+  height: 100%;
+  width: 100%;
+  transform-origin: left center;
+  transform: scaleX(0);
+  background: var(--text);
+}
+
+.delay-budget-tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--label);
+}
+
+.delay-num {
+  width: 196px;
+  min-width: 196px;
+  max-width: 196px;
+  text-align: right;
+}
+
+.status-ok { color: var(--text); }
+.status-warn { color: var(--warn); }
+.status-bad { color: var(--bad); }
+.fill-ok { background: var(--text); }
+.fill-warn { background: var(--warn); }
+.fill-bad { background: var(--bad); }
+
+/* 2. ENGINE (1 s failover outline flash is the ONLY flash on screen) */
+.engine-readout {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@keyframes engine-failover-flash {
+  0% { outline: 3px solid var(--warn); outline-offset: -3px; }
+  50% { outline: 3px solid var(--bad); outline-offset: -3px; }
+  100% { outline: 3px solid transparent; outline-offset: -3px; }
+}
+
+.engine-flash {
+  animation: engine-failover-flash 1s ease-out 1;
+}
+
+/* 3. AGENT: last 4 events at 20 px, wrapped up to 2 lines so hook reasons are readable */
+.agent-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.agent-item {
+  font-size: 20px;
+  line-height: 1.24;
+  font-weight: 500;
+  color: var(--text);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  word-break: break-word;
+}
+
+.agent-item-deny {
+  color: var(--bad);
+  font-weight: 700;
+}
+
+/* 4. MEMORY */
+.side-form {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.side-input {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  padding: 0 10px;
+  font-family: var(--font-words);
+  font-size: 18px;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--hairline);
+  border-radius: 6px;
+}
+
+.side-input:focus {
+  outline: 2px solid var(--speaker-b);
+  outline-offset: -1px;
+}
+
+.side-input-compact {
+  width: 184px;
+  flex: 0 1 184px;
+}
+
+.memory-box {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow: hidden;
+}
+
+.memory-q {
+  font-size: 18px;
+  color: var(--label);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.memory-a {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.22;
+  color: var(--text);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.memory-t {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 18px;
+  color: var(--label);
+}
+
+/* 5. ROBOT: small live frame with crosshair + command text (denied struck through in bad) */
+.robot-inline-form {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.robot-body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 152px 1fr;
+  gap: 12px;
+  align-items: start;
+  overflow: hidden;
+}
+
+.robot-mini-canvas {
+  width: 152px;
+  height: 102px;
+  border: 1px solid var(--hairline);
+  border-radius: 6px;
+  background: var(--bg);
+}
+
+.robot-commands {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow: hidden;
+}
+
+.robot-cmd-line {
+  font-size: 19px;
+  line-height: 1.25;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.robot-cmd-denied {
+  color: var(--bad);
+  text-decoration: line-through;
+}
+
+/* Spotlight line layer (joins target ring to right lane after D1-D4) */
+.spotlight-svg {
+  position: absolute;
+  inset: 0;
+  width: 1920px;
+  height: 1080px;
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* END CARD: full screen on bg inside the 1920x1080 stage */
+.end-card-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  background: var(--bg);
+  padding: 64px 72px;
+  display: flex;
+}
+
+.end-card-stage {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.end-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+/* "Look to Listen. Hear only who you look at." at 64 px */
+.end-card-headline {
+  font-size: 64px;
+  font-weight: 800;
+  line-height: 1.12;
+  color: var(--text);
+}
+
+/* Three numbers at 120 px, each with a 24 px label */
+.end-card-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 48px;
+}
+
+.end-metric-block {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.end-metric-num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 120px;
+  font-weight: 800;
+  line-height: 1;
+  min-height: 120px;
+  color: var(--text);
+}
+
+.end-metric-label {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--label);
+}
+
+.end-card-bottom {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 32px;
+  border-top: 1px solid var(--hairline);
+  padding-top: 28px;
+}
+
+.end-card-breaks-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.end-card-breaks {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.end-card-submeta {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 20px;
+  color: var(--label);
+}
+
+.end-card-qr-block {
+  display: flex;
+  align-items: flex-end;
+  gap: 20px;
+}
+
+.end-card-repo {
+  font-family: var(--font-mono);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--label);
+}
+
+.end-card-qr {
+  padding: 6px;
+  background: #FFFFFF;
+  border: 1px solid var(--hairline);
+  border-radius: 6px;
+  line-height: 0;
+}
+
+/* prefers-reduced-motion: every transition and animation is instant */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .live-dot {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+}

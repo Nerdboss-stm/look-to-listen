@@ -1,0 +1,12 @@
+{
+  "command_id": "cmd-001",
+  "face_id": "face-1",
+  "text": "Hand me the bottle.",
+  "target_face_id": "face-1",
+  "point": [540, 620],
+  "object_label": "water bottle",
+  "allowed": true,
+  "hook_reason": "Allowed: face-1 is the current target.",
+  "latency_ms": 420.0,
+  "time": "2026-11-21T11:31:00-05:00"
+}

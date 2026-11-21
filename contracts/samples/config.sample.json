@@ -1,0 +1,13 @@
+{
+  "config_id": "cfg-001",
+  "engine": "B-GPU",
+  "window_s": 3.0,
+  "hop_s": 0.5,
+  "decision_threshold": 0.9,
+  "guard_ms": 250,
+  "vocab": ["ClearVoice", "Malin"],
+  "translate_to": null,
+  "created_at": "2026-11-21T11:30:00-05:00",
+  "parent_config_id": null,
+  "notes": "Initial live B-GPU configuration."
+}

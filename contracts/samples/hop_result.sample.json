@@ -1,0 +1,12 @@
+{
+  "seq": 12,
+  "pcm": "AAAAAA==",
+  "gpu_ms": 129.4,
+  "queue_ms": 1.2,
+  "t_return": 1795192200740,
+  "covers": [12, 12],
+  "samples": 8000,
+  "t_capture": 1795192200500,
+  "rtt_ms": 240.0,
+  "engine": "B-GPU"
+}

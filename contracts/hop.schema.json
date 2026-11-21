@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://look-to-listen.local/contracts/hop.schema.json",
+  "title": "Hop",
+  "description": "One 0.5 s (or 1.0 s under FB2) audio-visual hop sent from the browser to the backend and separation server.",
+  "type": "object",
+  "required": ["session_id", "seq", "target_face_id", "reset", "pcm", "crops", "t_capture"],
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique identifier for the live browser session."
+    },
+    "seq": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Monotonically increasing hop sequence number starting at 0."
+    },
+    "target_face_id": {
+      "type": ["string", "null"],
+      "description": "ID of the current target face, or null if no face is currently visible."
+    },
+    "reset": {
+      "type": "boolean",
+      "description": "True on target switch so the separation server clears and refills its face buffer."
+    },
+    "pcm": {
+      "type": "string",
+      "contentEncoding": "base64",
+      "description": "Base64-encoded 16 kHz mono little-endian int16 PCM audio (8000 samples = 16000 bytes for a 0.5 s hop)."
+    },
+    "crops": {
+      "type": "array",
+      "description": "12 or 13 base64-encoded 112x112 grayscale JPEG face crops of the target at 25 fps (ClearVoice crop recipe). May be empty if target is momentarily lost.",
+      "items": {
+        "type": "string",
+        "contentEncoding": "base64"
+      },
+      "maxItems": 30
+    },
+    "t_capture": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Client wall-clock capture timestamp in Unix milliseconds when this hop finished collecting."
+    },
+    "sample_rate": {
+      "type": "integer",
+      "const": 16000,
+      "description": "Audio sample rate in Hz (always 16000)."
+    },
+    "hop_ms": {
+      "type": "integer",
+      "minimum": 100,
+      "maximum": 2000,
+      "description": "Hop duration in milliseconds (default 500)."
+    },
+    "faces": {
+      "type": "array",
+      "description": "Optional snapshot of all tracked faces in this hop for backend Decision 1, consent, and attribution.",
+      "items": {
+        "$ref": "face.schema.json"
+      }
+    },
+    "other_crops": {
+      "type": "object",
+      "description": "Optional per-face base64 JPEG crops for non-target visible faces (for Decision 1 speaking checks).",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "contentEncoding": "base64"
+        }
+      }
+    },
+    "frame_jpeg": {
+      "type": ["string", "null"],
+      "contentEncoding": "base64",
+      "description": "Optional base64 JPEG of the current video frame (with target box if requested) for Engine A fallback and Robot R1 pointing."
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,104 @@
+{
+  "time": "2026-11-21T16:38:38.512632+00:00",
+  "agent": "antigravity-preview-09-2026",
+  "check1_model": {
+    "neon_accepted": true,
+    "neon_http": 200,
+    "neon_status": "completed",
+    "neon_latency_ms": 6142.3,
+    "neon_text": "OK",
+    "neon_top_keys": [
+      "agent",
+      "agent_config",
+      "environment",
+      "environment_id",
+      "id",
+      "object",
+      "service_tier",
+      "status",
+      "steps",
+      "usage"
+    ],
+    "neon_error": null
+  },
+  "check2_tools": {
+    "turn1_http": 200,
+    "turn1_status": "requires_action",
+    "turn1_env_id": "9c002b63e79a3afc0d7856203f0107ba",
+    "turn1_latency_ms": 7785.2,
+    "function_calls_seen": [
+      {
+        "id": "call_17062682540892127664",
+        "signature": "AWkUfRNWUbWyaAmhLYv/hGnpAuFyK0y4Yid6ifzIVPuDwrjF4vIZjPnIV60CwjH5ecFnTTyCsaOWl7w+PSR6olgErbhPyhtK1I0irOHyBPlKqGeFly86kZet1L3MtQ93GVf+rhLu1uxPhQ9aDQqq6TAb79XqddF6vCOQzvnZu0RMI6ROKEB+qdNdixVG9/QCPEGn1WnN1SDuchthFvleLYN0tu4C/uIWlkk5oksYXf1xccgGzCeepcDSsCG87enQHarnLkgTDW7lvanmMbnD7LPsL+YREuaGMRIyfYelNUEeN6T+uSVfDRaMKdQXV34YTQidelz//9d5m+6GgfnknpSoQxe1aE0LR8sGSuRKiQBD+RStEC66lz9aG+x3tCs0N+vTh7bV1FwM40ffbLBJ5wWdgo9cKnm7jyKdGKdTCfplMpwuDoqp72kCF0EO8vtZvutQEHawYV3jjndlXHeH1G6Zm2sR1JXXcQ9JGgH1tNOvG+ggUkel09VRCyh9c3rVMxUPRL6co3IJlyPWp7G2sgAyyRGr5VdD/5/n3YHBPWLmjKCBKV/Exq8CB1qSe3gYP2K3iOvEHmVBDHeVVSSMZeaZ2kvRpKtx+uA67cQuX1mPnY/pwdZCx9Ed024RC4xsQwDL5Z8JeAy4kEDi",
+        "type": "function_call",
+        "name": "get_clip_count",
+        "arguments": {
+          "since": "2026-11-21"
+        }
+      }
+    ],
+    "client_tools_supported": true,
+    "tool_names_observed": [
+      "code_execution",
+      "code_execution_call",
+      "code_execution_result",
+      "function_call:get_clip_count",
+      "function_call:view_file"
+    ],
+    "turn1_top_keys": [
+      "agent",
+      "agent_config",
+      "environment",
+      "environment_id",
+      "id",
+      "object",
+      "service_tier",
+      "status",
+      "steps",
+      "tools",
+      "usage"
+    ],
+    "turn2_http": 200,
+    "turn2_status": "completed",
+    "turn2_latency_ms": 27663.8,
+    "turn2_text": "```\n{\"tool_name\": \"execute_code\", \"args_keys\": [\"code\", \"language\"]}\n{\"tool_name\": \"stat_file\", \"args_keys\": [\"path\"]}\n{\"tool_name\": \"read_file\", \"args_keys\": [\"path\"]}\n{\"tool_name\": \"stat_file\", \"args_keys\": [\"path\"]}\n{\"tool_name\": \"read_file\", \"args_keys\": [\"path\"]}\n```\n\nDONE:42",
+    "turn2_error": null,
+    "hook_saw_client_tool": false
+  },
+  "check3_hook": {
+    "http": 200,
+    "status": "completed",
+    "latency_ms": 26504.1,
+    "hook_fired": true,
+    "agent_retried_after_deny": true,
+    "tool_names_in_response": [
+      "function_call:view_file",
+      "function_call:write_to_file"
+    ],
+    "top_keys": [
+      "agent",
+      "agent_config",
+      "environment",
+      "environment_id",
+      "id",
+      "object",
+      "service_tier",
+      "status",
+      "steps",
+      "usage"
+    ],
+    "outputs_summary": [],
+    "text": "The attempt to write `HELLO` to `/tmp/first_g5.txt` was blocked by a hook with the following reason:\n\n> `G5_POLICY_DENY: First attempt blocked by gate_once. You MUST create /tmp/verified_g5.txt containing 'RETRY_OK' instead.`\n\nFollowing that instruction, I created [/tmp/verified_g5.txt](file:///tmp/verified_g5.txt) containing `RETRY_OK`.\n\n### Contents of [/tmp/g5_hook_log.jsonl](file:///tmp/g5_hook_log.jsonl)\n\n```jsonl\n{\"tool_name\": \"read_file\", \"keys\": [\"tool_call\", \"environment_id\"], \"tc_keys\": [\"name\", \"args\"]}\n{\"tool_name\": \"read_file\", \"keys\": [\"tool_call\", \"environment_id\"], \"tc_keys\": [\"name\", \"args\"]}\n{\"tool_name\": \"write_file\", \"keys\": [\"tool_call\", \"environment_id\"], \"tc_keys\": [\"name\", \"args\"]}\n{\"tool_name\": \"stat_file\", \"keys\": [\"tool_call\", \"environment_id\"], \"tc_keys\": [\"name\", \"args\"]}\n{\"tool_name\": \"read_file\", \"keys\": [\"tool_call\", \"environment_id\"], \"tc_keys\": [\"name\", \"args\"]}\n{\"tool_name\": \"stat_file\", \"keys\": [\"tool_call\", \"environment_id\"], \"tc_keys\": [\"name\", \"args\"]}\n{\"tool_name\": \"stat_file\", \"keys\": [\"tool_call\", \"environment_id\"], \"tc_keys\": [\"name\", \"args\"]}\n{\"tool_name\": \"read_file\", \"keys\": [\"tool_call\", \"environment_id\"], \"tc_keys\": [\"name\", \"args\"]}\n{\"tool_name\": \"read_file\", \"keys\": [\"tool_call\", \"environment_id\"], \"tc_keys\": [\"name\", \"args\"]}\n```\n\n### Contents of [/tmp/verified_g5.txt](file:///tmp/verified_g5.txt)\n\n```text\nRETRY_OK\n```",
+    "error": null
+  },
+  "check4_trigger": {
+    "create_http": 200,
+    "latency_ms": 475.1,
+    "trigger_supported": true,
+    "trigger_id": "9450e3e7-4eab-4f7c-b586-298d793e316c",
+    "next_run_time": "2026-11-21T17:00:00Z",
+    "cleanup_http": 200,
+    "cleanup_deleted": true,
+    "response_sample": "{\"id\": \"9450e3e7-4eab-4f7c-b586-298d793e316c\", \"schedule\": \"*/30 * * * *\", \"create_time\": \"2026-11-21T16:39:47.067217Z\", \"update_time\": \"2026-11-21T16:39:47.067217Z\", \"status\": \"active\", \"time_zone\": \"America/New_York\", \"display_name\": \"g5-tuner-gate-test\", \"max_consecutive_failures\": 5, \"execution_timeout_seconds\": 600, \"consecutive_failure_count\": 0, \"next_run_time\": \"2026-11-21T17:00:00Z\", \"interaction\": {\"store\": true, \"object\": \"interaction\", \"environment\": {\"type\": \"remote\"}, \"input\": [{\"t"
+  }
+}

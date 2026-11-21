@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Look to Listen</title>
+  </head>
+  <body>
+    <div class="stage-viewport" id="stage-viewport">
+      <div class="stage" id="stage">
+        <!-- Main Column: 1440 px wide (640 px camera + 16 px gutter + 376 px lanes) -->
+        <main class="main-col">
+          <!-- Camera: 1440 x 640 -->
+          <section class="camera-box" id="camera-stage">
+            <video id="camera-video" autoplay playsinline muted></video>
+            <canvas id="overlay-canvas" width="1440" height="640"></canvas>
+
+            <!-- Top-left controls & speaker consent strip (all >= 18px) -->
+            <div class="camera-controls">
+              <button type="button" class="stage-btn" id="start-btn">Start Camera</button>
+              <button type="button" class="stage-btn" id="auto-center-btn">Auto Target</button>
+              <button type="button" class="stage-btn" id="audio-toggle-btn">Voice: On</button>
+              <button type="button" class="stage-btn" id="replay-btn">Replay 10s</button>
+              <button type="button" class="stage-btn" id="bright-btn">Bright [B]</button>
+              <button type="button" class="stage-btn" id="end-card-btn">End Card [E]</button>
+            </div>
+
+            <!-- Top-right wall clock: 28 px mono with seconds + 1 Hz LIVE dot -->
+            <div class="wall-clock-wrap">
+              <span class="live-dot" id="live-dot" aria-hidden="true"></span>
+              <span class="live-word" id="ws-label">LIVE</span>
+              <span class="wall-clock" id="wall-clock">00:00:00</span>
+            </div>
+
+            <!-- Bottom-left speaker consent bar -->
+            <div class="face-bar" id="face-bar"></div>
+            <div class="camera-error" id="camera-error" aria-live="polite"></div>
+          </section>
+
+          <!-- Bottom Lanes: two columns of 712 x 376 -->
+          <section class="lanes-row">
+            <!-- Left Lane: Raw Mix -->
+            <section class="lane-panel" id="lane-raw">
+              <header class="lane-header">
+                <div class="lane-header-left">
+                  <span class="lane-title">WHAT THE MICROPHONE HEARS</span>
+                </div>
+                <div class="lane-leak-group hidden-until-value" id="leak-raw-group">
+                  <span class="lane-leak-label">LEAKAGE</span>
+                  <span class="counter-56" id="leak-raw-val"></span>
+                </div>
+              </header>
+              <div class="lane-body lane-body-raw" id="raw-captions">
+                <div class="lane-empty">Waiting for speech</div>
+              </div>
+            </section>
+
+            <!-- Right Lane: Target Only -->
+            <section class="lane-panel" id="lane-target">
+              <header class="lane-header">
+                <div class="lane-header-left">
+                  <span class="lane-title">LOOK TO LISTEN</span>
+                  <span class="target-header-badge hidden" id="target-lane-badge">A</span>
+                </div>
+                <div class="lane-leak-group hidden-until-value" id="leak-target-group">
+                  <span class="lane-leak-label">LEAKAGE</span>
+                  <span class="counter-56" id="leak-target-val"></span>
+                </div>
+              </header>
+              <div class="lane-body lane-body-target" id="target-captions">
+                <div class="lane-empty">Point at someone</div>
+              </div>
+            </section>
+          </section>
+        </main>
+
+        <!-- Side Strip: 416 px wide, top to bottom: DELAY, ENGINE, AGENT, MEMORY, ROBOT -->
+        <aside class="side-strip">
+          <!-- 1. DELAY -->
+          <section class="side-panel panel-delay">
+            <div class="side-panel-head">
+              <span class="side-label">DELAY</span>
+              <span class="side-meta" id="perf-pill">30 fps</span>
+            </div>
+
+            <div class="delay-row">
+              <div class="delay-info">
+                <span class="delay-sub-label">VOICE · 1.5S</span>
+                <div class="delay-bar-track">
+                  <div class="delay-bar-fill" id="delay-voice-bar"></div>
+                  <div class="delay-budget-tick" style="left: 50%;" title="1.5 s budget"></div>
+                </div>
+              </div>
+              <span class="counter-56 delay-num" id="delay-voice-val"></span>
+            </div>
+
+            <div class="delay-row">
+              <div class="delay-info">
+                <span class="delay-sub-label">CAPTIONS · 3.0S</span>
+                <div class="delay-bar-track">
+                  <div class="delay-bar-fill" id="delay-caption-bar"></div>
+                  <div class="delay-budget-tick" style="left: 50%;" title="3.0 s budget"></div>
+                </div>
+              </div>
+              <span class="counter-56 delay-num" id="delay-caption-val"></span>
+            </div>
+
+          </section>
+
+          <!-- 2. ENGINE -->
+          <section class="side-panel panel-engine" id="engine-panel">
+            <div class="side-panel-head">
+              <span class="side-label">ENGINE</span>
+            </div>
+            <div class="engine-readout" id="engine-label">B-GPU · RTX 4090</div>
+          </section>
+
+          <!-- 3. AGENT -->
+          <section class="side-panel panel-agent">
+            <div class="side-panel-head">
+              <span class="side-label">AGENT</span>
+              <button type="button" class="stage-btn" id="save-transcript-btn">Save</button>
+            </div>
+            <div class="agent-list" id="agent-feed">
+              <div class="side-empty">No agent events yet</div>
+            </div>
+          </section>
+
+          <!-- 4. MEMORY -->
+          <section class="side-panel panel-memory">
+            <div class="side-panel-head">
+              <span class="side-label">MEMORY</span>
+              <button type="button" class="stage-btn" id="summary-btn">Summary</button>
+            </div>
+            <form class="side-form" id="memory-form">
+              <input
+                type="text"
+                class="side-input"
+                id="memory-input"
+                aria-label="Ask memory"
+                value=""
+              />
+              <button type="submit" class="stage-btn">Ask</button>
+            </form>
+            <div class="memory-box" id="memory-answer">
+              <div class="side-empty">No question asked yet</div>
+            </div>
+          </section>
+
+          <!-- 5. ROBOT -->
+          <section class="side-panel panel-robot">
+            <div class="side-panel-head">
+              <span class="side-label">ROBOT</span>
+              <form class="robot-inline-form" id="robot-form">
+                <input
+                  type="text"
+                  class="side-input side-input-compact"
+                  id="robot-input"
+                  aria-label="Robot command"
+                  value=""
+                />
+                <button type="submit" class="stage-btn">Act</button>
+              </form>
+            </div>
+            <div class="robot-body">
+              <canvas id="robot-canvas" class="robot-mini-canvas" width="152" height="102"></canvas>
+              <div class="robot-commands" id="robot-feed">
+                <div class="side-empty">No robot command yet</div>
+              </div>
+            </div>
+          </section>
+        </aside>
+
+        <!-- Thin spotlight line joining the target ring to the right lane (DESIGN.md) -->
+        <svg class="spotlight-svg" viewBox="0 0 1920 1080" aria-hidden="true">
+          <path
+            id="spotlight-line"
+            d=""
+            fill="none"
+            stroke="transparent"
+            stroke-width="1.5"
+            stroke-opacity="0.75"
+          />
+        </svg>
+
+        <!-- Full-screen END CARD inside the 1920x1080 stage -->
+        <section class="end-card-layer hidden" id="end-card-backdrop">
+          <div class="end-card-stage" id="end-card-content"></div>
+        </section>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

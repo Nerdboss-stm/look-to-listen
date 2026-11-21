@@ -1,0 +1,13 @@
+gate,run,time_et,model,thinking,input,correct,total,latency_ms,pass,notes
+G1-GPU,1,10:58,AV_MossFormer2_TSE_16K,,3 s window (random audio + 75 frames) on the RTX 4090 pod,,7,131,yes,"worst 131 ms; 2 s window 115 ms; torch 2.8.0+cu129"
+G7-net,1,11:01,,,TCP connect laptop to pod SSH port (venue Wi-Fi),,15,42,info,"ping 46 ms avg; full G7 runs after E2"
+G7,1,11:15,AV_MossFormer2_TSE_16K,,"venue Wi-Fi, 50 live hops of 50 KB",,50,240,yes,"p95 467 ms; max 689 ms; gpu p50 129 ms; 0 merged; 0 errors"
+G5,1,11:39,antigravity-preview-09-2026,,"4 checks: gemini-4-neon model, client function tool, pre_tool_execution deny+retry hook, 30-min trigger",4,4,6142,yes,"neon accepted (6142 ms); client tool requires_action+function_result OK (env_id required); pre_tool_execution hook saw execute_code/write_file/read_file/stat_file (not client tool), deny+retry OK (26504 ms); */30 trigger create+delete OK (475 ms)"
+G7,hotspot,11:58,AV_MossFormer2_TSE_16K,,"phone hotspot, 50 live hops 50 KB each",,50,458,yes,"p95 1567 ms; max 1865 ms; gpu p50 129 ms; p95 131 ms; queue p50 0 ms; 0 merged; 0 errors"
+G2,1,12:04,gemini-3.5-transcribe-live,,"5 spoken sentences 16kHz PCM, 2 concurrent live sessions (v1alpha)",5,5,648,yes,"Lane1 WER 0.0% p50 648 ms; Lane2 WER 0.0% p50 651 ms; interim+final streaming; custom_vocabulary ready; selected primary captioner"
+G2,2,12:04,gemini-4-hydrogen-live,,"same 5 sentences probe (v1alpha bidiGenerateContent)",0,1,0,no,"APIError 1008: models/gemini-4-hydrogen-live not found or unsupported for bidiGenerateContent"
+G2,3,12:04,gemini-4-hydrogen,LOW,"same 5 sentences in 1 s WAV chunks (17 chunks, FB5 fallback)",0,5,2883,no,"WER 22.9% (0.229), p50 2883 ms; kept as FB5 fallback only"
+G3,1,12:08,gemini-decision-1,,"20 x 1 s face-crop AV clips (10 speaking, 10 silent w/ other voice), 4xJPEG+WAV vs MP4",11,20,1567,no,"4xJPEG+WAV: 11/20 @0.9, 17/20 @0.5, p50 1567 ms; video/mp4: 10/20 @0.9, 13/20 @0.5, p50 1293 ms; synthetic 2-frame morphs; non-blocking live loop + FB6 ready; re-score on real Set D"
+G4,1,12:10,gemini-4-hydrogen,LOW,"5 two-talker AV clips cut into 2 s chunks w/ green box on target face",5,5,8474,info,"mean leakage 0.0% (0/33 words), mean WER 45.9%, chunk p50 8474 ms; confirms B-GPU base & Engine A zero-leakage fallback"
+G6,1,12:05,gemini-robotics-er-2-preview,budget=0,"5 table photos (>=5 everyday objects each), v1beta",5,5,2137,yes,"5/5 visually verified on target object (mug, apple, stapler, scissors, soda can); p50 2137 ms; selected primary robot pointer"
+G6,2,12:05,gemini-4-hydrogen,LOW,"same 5 table photos (fallback arm)",5,5,3818,yes,"5/5 visually verified on target object; p50 3818 ms; wired as automatic fallback"

@@ -1,0 +1,15 @@
+.env
+.env.*
+!.env.example
+logs/
+clips/
+*.wav
+__pycache__/
+.venv/
+node_modules/
+dist/
+.DS_Store
+.pytest_cache/
+.vite/
+# names learned from consenting people at the venue stay local
+vocab.json

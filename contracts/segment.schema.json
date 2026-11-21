@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://look-to-listen.local/contracts/segment.schema.json",
+  "title": "CaptionSegment",
+  "description": "A live or finalized caption segment emitted onto the raw, target, or other-speaker lane.",
+  "type": "object",
+  "required": ["t0", "t1", "lane", "face_id", "text", "confidence", "engine"],
+  "properties": {
+    "t0": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Start timestamp of the spoken segment (Unix milliseconds)."
+    },
+    "t1": {
+      "type": "number",
+      "minimum": 0,
+      "description": "End timestamp of the spoken segment (Unix milliseconds)."
+    },
+    "lane": {
+      "type": "string",
+      "enum": ["target", "raw", "other"],
+      "description": "Caption lane: 'raw' (microphone mix), 'target' (Look to Listen), or 'other' (attributed non-target speaker)."
+    },
+    "face_id": {
+      "type": ["string", "null"],
+      "description": "Attributed face ID, or null for unattributed raw microphone audio."
+    },
+    "text": {
+      "type": "string",
+      "description": "Transcribed caption text."
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Confidence score in [0, 1] for transcription or attribution."
+    },
+    "engine": {
+      "type": "string",
+      "enum": ["B-GPU", "B-Mac", "A", "replay"],
+      "description": "Active engine that produced this segment."
+    },
+    "segment_id": {
+      "type": "string",
+      "description": "Optional unique identifier so updates can replace in-progress partial captions."
+    },
+    "is_final": {
+      "type": "boolean",
+      "description": "True if this segment has been finalized/merged (e.g. by Neon)."
+    },
+    "speaker_color": {
+      "type": ["string", "null"],
+      "pattern": "^#[0-9a-fA-F]{6}$",
+      "description": "Optional speaker hex color corresponding to face_id."
+    },
+    "translated_text": {
+      "type": ["string", "null"],
+      "description": "Optional translated caption text when translate_to is set."
+    },
+    "latency_ms": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Measured caption delay in milliseconds."
+    },
+    "guarded": {
+      "type": "boolean",
+      "description": "True if the Decision 1 leakage guard evaluated this target-lane segment."
+    }
+  },
+  "additionalProperties": false
+}

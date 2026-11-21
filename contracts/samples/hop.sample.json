@@ -1,0 +1,35 @@
+{
+  "session_id": "sess-demo-001",
+  "seq": 12,
+  "target_face_id": "face-1",
+  "reset": false,
+  "pcm": "AAAAAA==",
+  "crops": [
+    "/9j/4AAQSkZJRgABAQAAAQABAAD/",
+    "/9j/4AAQSkZJRgABAQAAAQABAAD/",
+    "/9j/4AAQSkZJRgABAQAAAQABAAD/",
+    "/9j/4AAQSkZJRgABAQAAAQABAAD/",
+    "/9j/4AAQSkZJRgABAQAAAQABAAD/",
+    "/9j/4AAQSkZJRgABAQAAAQABAAD/",
+    "/9j/4AAQSkZJRgABAQAAAQABAAD/",
+    "/9j/4AAQSkZJRgABAQAAAQABAAD/",
+    "/9j/4AAQSkZJRgABAQAAAQABAAD/",
+    "/9j/4AAQSkZJRgABAQAAAQABAAD/",
+    "/9j/4AAQSkZJRgABAQAAAQABAAD/",
+    "/9j/4AAQSkZJRgABAQAAAQABAAD/"
+  ],
+  "t_capture": 1795192200500,
+  "sample_rate": 16000,
+  "hop_ms": 500,
+  "faces": [
+    {
+      "id": "face-1",
+      "box": { "x": 0.34, "y": 0.18, "w": 0.22, "h": 0.36 },
+      "lips": [[0.42, 0.44], [0.48, 0.44]],
+      "mouth_open": 0.14,
+      "color": "#22C55E",
+      "consent": { "given": true, "by": "operator", "time": "2026-11-21T11:30:00-05:00" },
+      "is_target": true
+    }
+  ]
+}

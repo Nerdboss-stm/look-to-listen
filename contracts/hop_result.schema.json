@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://look-to-listen.local/contracts/hop_result.schema.json",
+  "title": "HopResult",
+  "description": "Clean target-speaker audio returned by the separation server for one or more hops.",
+  "type": "object",
+  "required": ["seq", "pcm", "gpu_ms", "queue_ms", "t_return"],
+  "properties": {
+    "seq": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Sequence number of the newest hop covered by this result."
+    },
+    "pcm": {
+      "type": "string",
+      "contentEncoding": "base64",
+      "description": "Base64-encoded 16 kHz mono little-endian int16 PCM clean target voice (typically 8000 samples for 0.5 s)."
+    },
+    "gpu_ms": {
+      "type": "number",
+      "minimum": 0,
+      "description": "GPU inference duration in milliseconds on the separation server."
+    },
+    "queue_ms": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Time in milliseconds spent waiting for the GPU lock before inference."
+    },
+    "t_return": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Unix milliseconds timestamp when the result was produced or received."
+    },
+    "covers": {
+      "type": "array",
+      "description": "Inclusive [first_seq, last_seq] range of hops covered if multiple hops were merged.",
+      "prefixItems": [
+        { "type": "integer", "minimum": 0 },
+        { "type": "integer", "minimum": 0 }
+      ],
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "samples": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of int16 PCM samples in pcm."
+    },
+    "t_capture": {
+      "type": ["number", "null"],
+      "minimum": 0,
+      "description": "Echoed client capture timestamp in Unix ms for end-to-end RTT measurement."
+    },
+    "sent_ms": {
+      "type": ["number", "null"],
+      "minimum": 0,
+      "description": "Echoed client send timestamp in Unix ms (binary fast path)."
+    },
+    "rtt_ms": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Measured round-trip time in milliseconds on the client clock."
+    },
+    "engine": {
+      "type": "string",
+      "enum": ["B-GPU", "B-Mac", "A", "replay"],
+      "description": "Separation engine that produced this result."
+    }
+  },
+  "additionalProperties": false
+}

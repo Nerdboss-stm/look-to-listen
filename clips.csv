@@ -1,0 +1,1 @@
+clip_id,time_et,talkers,target_face,distance_m,angle,noise_db,occlusion,consent_ids,truth_target,truth_others,b0_text,b0_wer,b0_leak,a_text,a_wer,a_leak,a_time_s,b_text,b_wer,b_leak,b_time_s,notes

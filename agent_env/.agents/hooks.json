@@ -1,0 +1,38 @@
+{
+  "listener-gates": {
+    "pre_tool_execution": [
+      {
+        "matcher": "write_file|execute_code|release_config|save_transcript|send_summary|robot_act",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"import os,runpy; p=next(x for x in ['hooks/gate_privacy.py','/workspace/hooks/gate_privacy.py','/hooks/gate_privacy.py'] if os.path.exists(x)); runpy.run_path(p, run_name='__main__')\"",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "python3 -c \"import os,runpy; p=next(x for x in ['hooks/gate_command.py','/workspace/hooks/gate_command.py','/hooks/gate_command.py'] if os.path.exists(x)); runpy.run_path(p, run_name='__main__')\"",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "python3 -c \"import os,runpy; p=next(x for x in ['hooks/gate_release.py','/workspace/hooks/gate_release.py','/hooks/gate_release.py'] if os.path.exists(x)); runpy.run_path(p, run_name='__main__')\"",
+            "timeout": 20
+          }
+        ]
+      }
+    ],
+    "post_tool_execution": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"import os,runpy; p=next(x for x in ['hooks/post_tool_log.py','/workspace/hooks/post_tool_log.py','/hooks/post_tool_log.py'] if os.path.exists(x)); runpy.run_path(p, run_name='__main__')\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

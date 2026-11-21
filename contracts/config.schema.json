@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://look-to-listen.local/contracts/config.schema.json",
+  "title": "PipelineConfig",
+  "description": "Live pipeline configuration tuned and released by the Managed Agent behind gate_release.py.",
+  "type": "object",
+  "required": [
+    "config_id",
+    "engine",
+    "window_s",
+    "hop_s",
+    "decision_threshold",
+    "guard_ms",
+    "vocab",
+    "translate_to"
+  ],
+  "properties": {
+    "config_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique identifier for this configuration version (e.g. 'cfg-001')."
+    },
+    "engine": {
+      "type": "string",
+      "enum": ["B-GPU", "B-Mac", "A", "replay"],
+      "description": "Preferred active separation/captioning engine."
+    },
+    "window_s": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "maximum": 10,
+      "description": "Rolling audio-visual window length in seconds (default 3.0)."
+    },
+    "hop_s": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "maximum": 2,
+      "description": "Hop interval in seconds (default 0.5; 1.0 under FB2)."
+    },
+    "decision_threshold": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Probability threshold for Decision 1 speaking detection (default 0.9)."
+    },
+    "guard_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 5000,
+      "description": "Leakage guard hang-over/padding window in milliseconds around speaking intervals."
+    },
+    "vocab": {
+      "type": "array",
+      "description": "Custom vocabulary and consenting speaker names passed to Neon (from vocab.json).",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "translate_to": {
+      "type": ["string", "null"],
+      "description": "Optional BCP-47 language code or language name for Neon live translation, or null if off."
+    },
+    "created_at": {
+      "type": "string",
+      "description": "Optional ISO-8601 creation timestamp."
+    },
+    "parent_config_id": {
+      "type": ["string", "null"],
+      "description": "Optional parent config_id this config was derived from."
+    },
+    "notes": {
+      "type": "string",
+      "description": "Optional summary of why this config was proposed."
+    }
+  },
+  "additionalProperties": false
+}

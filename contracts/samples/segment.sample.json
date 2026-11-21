@@ -1,0 +1,15 @@
+{
+  "t0": 1795192200000,
+  "t1": 1795192201500,
+  "lane": "target",
+  "face_id": "face-1",
+  "text": "Let's meet near the front table after the session.",
+  "confidence": 0.94,
+  "engine": "B-GPU",
+  "segment_id": "seg-0012",
+  "is_final": true,
+  "speaker_color": "#22C55E",
+  "translated_text": null,
+  "latency_ms": 1840,
+  "guarded": true
+}

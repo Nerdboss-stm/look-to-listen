@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://look-to-listen.local/contracts/decision.schema.json",
+  "title": "SpeakingDecision",
+  "description": "Calibrated per-face speaking decision from Gemini Decisions API (gemini-decision-1) or FB6 fallback.",
+  "type": "object",
+  "required": ["face_id", "window_t0", "window_t1", "p_speaking", "latency_ms"],
+  "properties": {
+    "face_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "ID of the evaluated face."
+    },
+    "window_t0": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Start of the 1 s evaluated window (Unix milliseconds)."
+    },
+    "window_t1": {
+      "type": "number",
+      "minimum": 0,
+      "description": "End of the 1 s evaluated window (Unix milliseconds)."
+    },
+    "p_speaking": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Calibrated probability that this face is speaking during [window_t0, window_t1]."
+    },
+    "latency_ms": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Model call latency in milliseconds."
+    },
+    "calibrated": {
+      "type": "boolean",
+      "description": "True for Decisions API output; false when FB6 MediaPipe mouth-open fallback is used."
+    },
+    "source": {
+      "type": "string",
+      "enum": ["decision-1", "mediapipe-uncalibrated"],
+      "description": "Source that produced this speaking probability."
+    }
+  },
+  "additionalProperties": false
+}

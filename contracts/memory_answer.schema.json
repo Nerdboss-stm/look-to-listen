@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://look-to-listen.local/contracts/memory_answer.schema.json",
+  "title": "MemoryAnswer",
+  "description": "An answer from Argon (or Neon transcript-only fallback FB7) to a question about the conversation.",
+  "type": "object",
+  "required": ["question", "answer", "time", "clip", "confidence"],
+  "properties": {
+    "question": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The user's memory question (e.g. 'What did she say about the schedule?')."
+    },
+    "answer": {
+      "type": "string",
+      "description": "Grounded answer extracted from the conversation."
+    },
+    "time": {
+      "type": ["string", "number", "null"],
+      "description": "Timestamp or offset of the referenced moment (e.g. '00:02:14', ISO-8601 string, or seconds), or null if not found."
+    },
+    "clip": {
+      "type": ["string", "null"],
+      "description": "Clip identifier or relative path under clips/ for the referenced moment (consenting speakers only), or null if unavailable."
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Model confidence in [0, 1]."
+    },
+    "source": {
+      "type": "string",
+      "enum": ["argon", "neon-transcript-only"],
+      "description": "Model path used ('neon-transcript-only' when FB7 is active)."
+    },
+    "latency_ms": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Query latency in milliseconds (AT10 target: <= 8000 ms)."
+    },
+    "face_id": {
+      "type": ["string", "null"],
+      "description": "Attributed face ID for the referenced moment, if applicable."
+    }
+  },
+  "additionalProperties": false
+}
