@@ -16,6 +16,7 @@ Wires together:
 """
 
 from __future__ import annotations
+import json
 
 import asyncio
 import base64
@@ -132,6 +133,18 @@ class GeminiPipelineController:
         """Called every 0.5 s by S1's LiveRuntime on every browser hop."""
         t_capture = float(hop.get("t_capture") or (time.time() * 1000.0))
         target_face_id = hop.get("target_face_id")
+        # Demo lip gate: remember whether the target's lips moved during this hop
+        if not hasattr(self, "_lips_by_t"):
+            self._lips_by_t = {}
+        self._lips_by_t[round(t_capture)] = bool(hop.get("lips_active", True))
+        try:
+            with open("logs/lips.jsonl", "a") as _lf:
+                _lf.write(json.dumps({"t": round(t_capture), "target": target_face_id, "active": hop.get("lips_active"), "stats": hop.get("lips_stats")}) + "\n")
+        except Exception:
+            pass
+        if len(self._lips_by_t) > 400:
+            for k in sorted(self._lips_by_t)[:200]:
+                self._lips_by_t.pop(k, None)
         reset = bool(hop.get("reset", False))
         faces = hop.get("faces") if isinstance(hop.get("faces"), list) else []
 
@@ -242,8 +255,19 @@ class GeminiPipelineController:
         if self.runtime.separator.active_engine not in ("B-GPU", "B-Mac"):
             return
         t_cap = float(getattr(result, "t_capture", 0.0) or (time.time() * 1000.0))
+        pcm_out = result.pcm_bytes
+        lips = getattr(self, "_lips_by_t", {})
+        near = [v for k, v in lips.items() if abs(k - t_cap) <= 260]
+        try:
+            with open("logs/lips.jsonl", "a") as _lf:
+                _lf.write(json.dumps({"clean_t": round(t_cap), "near": near}) + "\n")
+        except Exception:
+            pass
+        if near and not any(near):
+            # Target's lips were still: send silence so other people's words never reach the right lane
+            pcm_out = bytes(len(result.pcm_bytes))
         self.target_lane.push_pcm16(
-            result.pcm_bytes,
+            pcm_out,
             t_capture_ms=t_cap,
             face_id=self.runtime.target_face_id,
         )
@@ -256,6 +280,9 @@ class GeminiPipelineController:
     async def _run_engine_a_chunk(self, chunk: dict[str, Any]) -> None:
         seg = await self.engine_a_buf.process_chunk(chunk)
         if not seg or self.runtime is None:
+            return
+        # Demo fix: Engine A answers arrived 10-47 s late on venue Wi-Fi; never show stale words
+        if float(seg.get("latency_ms") or 0.0) > 6000.0:
             return
         target_fid = seg.get("face_id") or self.runtime.target_face_id
         allow, _ = self.leakage_guard.allow_target_segment(target_fid, seg["t0"], seg["t1"])
@@ -282,7 +309,7 @@ class GeminiPipelineController:
             return
         engine = self.runtime.separator.active_engine
         best_fid, best_p = self.leakage_guard.best_speaking_face(ev["t0"], ev["t1"])
-        attr_fid = best_fid if best_p >= self.leakage_guard.decision_threshold else None
+        attr_fid = None  # demo: left lane is literal, no speaker labels
         seg: dict[str, Any] = {
             "t0": ev["t0"],
             "t1": ev["t1"],
@@ -297,8 +324,7 @@ class GeminiPipelineController:
             "latency_ms": ev["latency_ms"],
         }
         await self.runtime.broadcast({"type": "segment", "payload": seg})
-        if seg["is_final"]:
-            self._queue_neon_polish(seg)
+        # Demo: left lane is literal microphone text; no Neon relabeling
 
     async def _on_target_caption(self, ev: dict[str, Any]) -> None:
         if self.runtime is None:
@@ -365,7 +391,7 @@ class GeminiPipelineController:
                 consent_given=consent_ok,
                 speaker_label=label,
             )
-            self._queue_neon_polish(seg)
+            # Demo: target lane shows the separated voice's words as heard; no Neon rewrite
 
     def _queue_neon_polish(self, seg: dict[str, Any]) -> None:
         """Batch finalized segments for best-effort background Neon polish (skips turn if busy/recent)."""
@@ -415,8 +441,7 @@ class GeminiPipelineController:
                 updated = dict(orig)
                 updated["face_id"] = fid
                 updated["speaker_color"] = self._face_color(fid)
-                if item.get("text"):
-                    updated["text"] = str(item["text"])
+                # Demo: Neon only labels who spoke; it never rewrites what the microphone heard
                 if item.get("translated_text"):
                     updated["translated_text"] = str(item["translated_text"])
                 updated["is_final"] = True

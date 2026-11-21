@@ -49,8 +49,9 @@ def get_vocab_terms(path: Path = VOCAB_PATH) -> list[str]:
             terms.append(s)
     for name in (data.get("consenting_speakers") or {}).values():
         s = str(name).strip()
-        if s:
+        if s and s.lower() != "operator":  # placeholder name: biasing on it made the captioner print "operator"
             terms.append(s)
+    terms = [t for t in terms if t.lower() != "operator"]
     return list(dict.fromkeys(terms))[:MAX_CUSTOM_VOCAB]
 
 

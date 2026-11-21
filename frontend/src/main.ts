@@ -329,6 +329,29 @@ function getConsentedTargetFace(): Face | null {
 
 let lastConsentedTargetId: string | null = null;
 
+// Lip gate history: (wall ms, mouth-open ratio) of the current consented target
+const lipHist: Array<[number, number]> = [];
+const LIP_RANGE = 0.05;
+const LIP_OPEN = 0.25;
+function recordTargetLips(nowWall: number, f: Face | null): void {
+  if (f) lipHist.push([nowWall, f.mouth_open ?? 0]);
+  while (lipHist.length && nowWall - lipHist[0][0] > 8000) lipHist.shift();
+}
+function lipStats(t0: number): number[] {
+  const xs: number[] = [];
+  for (const [t, m] of lipHist) if (t >= t0 - 300 && t <= t0 + 800) xs.push(m);
+  if (xs.length === 0) return [0, 0, 0];
+  return [xs.length, Math.min(...xs), Math.max(...xs)];
+}
+function targetLipsActive(t0: number): boolean {
+  const xs: number[] = [];
+  for (const [t, m] of lipHist) if (t >= t0 - 300 && t <= t0 + 800) xs.push(m);
+  if (xs.length < 5) return false; // no lip data (face not seen or tab hidden): treat as silent
+  const mx = Math.max(...xs);
+  const mn = Math.min(...xs);
+  return mx - mn > LIP_RANGE || mx > LIP_OPEN;
+}
+
 // Demo grace: keep the last consented target for 3 s through track flicker, so one
 // dropped detection does not mute the voice, wipe captions and reset the separator.
 let graceFace: Face | null = null;
@@ -508,7 +531,9 @@ function handleServerMessage(msg: ServerWsMessage): void {
       latestGpuMs = res.gpu_ms;
       // Never play unguided separation when there is no consented target
       if (getConsentedTargetFace() !== null) {
-        voicePlayer.enqueuePcmBase64(res.pcm);
+        // Lip gate: if the target's lips were still during this hop, play leakage at -18 dB
+        const lipT0 = typeof res.t_capture === "number" ? res.t_capture : Date.now() - 1000;
+        voicePlayer.enqueuePcmBase64(res.pcm, targetLipsActive(lipT0) ? 1.0 : 0.12);
         const rtt =
           res.rtt_ms ??
           (res.t_capture ? Math.max(0, Date.now() - res.t_capture) : null);
@@ -661,6 +686,7 @@ function frameLoop(): void {
 
   if (landmarker && videoReady) {
     const consentedTarget = syncConsentedTargetState();
+    if (ranDetectThisTick) recordTargetLips(nowWall, consentedTarget);
 
     // Cut ClearVoice lip crops directly from the full-resolution 1920x1080 videoEl at 25 fps
     if (consentedTarget && hopPacker.shouldSampleTargetCrop(nowPerf)) {
@@ -808,6 +834,9 @@ async function startLiveCapture(): Promise<void> {
           frameJpeg: latestFrameJpeg,
         });
         if (!hop) return;
+        // Lip gate for the right-lane captions: tell the backend if the target's lips moved this hop
+        (hop as unknown as Record<string, unknown>).lips_active = targetLipsActive(chunk.tCapture);
+        (hop as unknown as Record<string, unknown>).lips_stats = lipStats(chunk.tCapture);
         const sent = backend.sendHop(hop);
         if (!sent && backend.isConnected()) {
           hopPacker.recordDrop();

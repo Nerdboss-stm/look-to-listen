@@ -92,7 +92,7 @@ export class VoicePlayer {
     this.applyGain();
   }
 
-  enqueuePcmBase64(b64: string): void {
+  enqueuePcmBase64(b64: string, chunkGain = 1.0): void {
     if (!this.enabled || this.targetMuted || !this.ctx || !this.gainNode || !b64) {
       return;
     }
@@ -102,7 +102,7 @@ export class VoicePlayer {
     const audioBuf = this.ctx.createBuffer(1, pcm.length, 16000);
     const ch = audioBuf.getChannelData(0);
     for (let i = 0; i < pcm.length; i++) {
-      ch[i] = pcm[i] / 32768;
+      ch[i] = (pcm[i] / 32768) * chunkGain;
     }
 
     const now = this.ctx.currentTime;

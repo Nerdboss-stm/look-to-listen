@@ -664,7 +664,8 @@ class LiveCaptionLane:
                 continue
 
             # Drop stale audio older than 1.5 s (live beats complete)
-            if (time.time() * 1000.0) - t_cap > 1500.0:
+            # Target audio arrives after the GPU round trip, so allow it to be older (demo fix)
+            if (time.time() * 1000.0) - t_cap > (4000.0 if self.lane == "target" else 1500.0):
                 continue
 
             self._last_audio_ms = t_cap + (len(pcm) / 32.0)
