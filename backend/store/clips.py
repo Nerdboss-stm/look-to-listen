@@ -8,6 +8,7 @@ The backend enforces it for clips/.
 from __future__ import annotations
 
 import json
+import os
 import threading
 import time
 import wave
@@ -23,6 +24,13 @@ AGENT_LOG_PATH = REPO_ROOT / "logs" / "agent.jsonl"
 SR = 16000
 
 
+def _default_agent_log_path() -> Path:
+    override = os.environ.get("L2L_LOG_DIR", "").strip()
+    if override:
+        return Path(override) / "agent.jsonl"
+    return AGENT_LOG_PATH
+
+
 class ConsentDeniedError(PermissionError):
     """Raised whenever saving or recording audio is attempted without consent."""
 
@@ -32,8 +40,15 @@ class ConsentDeniedError(PermissionError):
         super().__init__(msg)
 
 
-def _append_privacy_event(decision: str, reason: str, details: dict[str, Any]) -> None:
-    AGENT_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+def _append_privacy_event(
+    decision: str,
+    reason: str,
+    details: dict[str, Any],
+    *,
+    log_path: Path | None = None,
+) -> None:
+    target = log_path or _default_agent_log_path()
+    target.parent.mkdir(parents=True, exist_ok=True)
     rec = {
         "time": datetime.now(timezone.utc).isoformat(),
         "event_type": "hook",
@@ -45,7 +60,7 @@ def _append_privacy_event(decision: str, reason: str, details: dict[str, Any]) -
         "details": details,
     }
     try:
-        with AGENT_LOG_PATH.open("a", encoding="utf-8") as f:
+        with target.open("a", encoding="utf-8") as f:
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
     except OSError:
         pass
@@ -63,9 +78,15 @@ def _write_wav16(path: Path, pcm_bytes: bytes, sample_rate: int = SR) -> None:
 class ClipStore:
     """Manages consent-gated live clip recording and clip metadata under clips/."""
 
-    def __init__(self, consent_store: ConsentStore, clips_dir: Path | None = None) -> None:
+    def __init__(
+        self,
+        consent_store: ConsentStore,
+        clips_dir: Path | None = None,
+        agent_log_path: Path | None = None,
+    ) -> None:
         self.consent = consent_store
         self.clips_dir = clips_dir or CLIPS_DIR
+        self.agent_log_path = agent_log_path
         self._lock = threading.Lock()
         self._active_clip_id: str | None = None
         self._active_faces: list[str] = []
@@ -78,12 +99,22 @@ class ClipStore:
         unique_faces = [f for f in dict.fromkeys(face_ids) if f]
         if not unique_faces:
             reason = f"Refused to {context}: no consenting faces identified."
-            _append_privacy_event("DENY", reason, {"context": context, "missing_faces": []})
+            _append_privacy_event(
+                "DENY",
+                reason,
+                {"context": context, "missing_faces": []},
+                log_path=self.agent_log_path,
+            )
             raise ConsentDeniedError([], reason)
         missing = self.consent.missing_consent(unique_faces)
         if missing:
             reason = f"Refused to {context}: missing consent for {', '.join(missing)}."
-            _append_privacy_event("DENY", reason, {"context": context, "missing_faces": missing})
+            _append_privacy_event(
+                "DENY",
+                reason,
+                {"context": context, "missing_faces": missing},
+                log_path=self.agent_log_path,
+            )
             raise ConsentDeniedError(missing, reason)
 
     def start_recording(
@@ -127,6 +158,7 @@ class ClipStore:
                         "DENY",
                         f"Aborted clip {cid}: non-consenting face entered frame ({', '.join(missing)}).",
                         {"clip_id": cid, "missing_faces": missing},
+                        log_path=self.agent_log_path,
                     )
                     return
                 for fid in visible_face_ids:

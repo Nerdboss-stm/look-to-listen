@@ -16,7 +16,9 @@ import argparse
 import asyncio
 import base64
 import json
+import os
 import sys
+import tempfile
 import time
 from pathlib import Path
 
@@ -53,9 +55,31 @@ def pct(vals: list[float], p: float) -> float:
 async def run_verification(hops: int = 60, port: int = 8000, use_existing: bool = False) -> int:
     server = None
     serve_task = None
+    temp_dir_obj = None
+    hops_log_path = REPO_ROOT / "logs" / "hops.jsonl"
 
     if not use_existing:
-        from backend.main import app
+        # Isolate verification logs in a temporary directory so we never pollute logs/
+        temp_dir_obj = tempfile.TemporaryDirectory(prefix="l2l-verify-")
+        temp_log_dir = Path(temp_dir_obj.name)
+        os.environ["L2L_LOG_DIR"] = str(temp_log_dir)
+        hops_log_path = temp_log_dir / "hops.jsonl"
+
+        import backend.main as main_mod
+
+        main_mod.AGENT_LOG_PATH = temp_log_dir / "agent.jsonl"
+        rt = main_mod.get_runtime()
+        rt.hop_logger.path = hops_log_path
+        rt.clips.agent_log_path = temp_log_dir / "agent.jsonl"
+        try:
+            import backend.gemini.logger as gemini_logger_mod
+
+            gemini_logger_mod.AGENT_LOG = temp_log_dir / "agent.jsonl"
+            gemini_logger_mod.CALLS_LOG = temp_log_dir / "calls.jsonl"
+        except Exception:
+            pass
+
+        app = main_mod.app
 
         config = uvicorn.Config(app, host="127.0.0.1", port=port, log_level="warning")
         server = uvicorn.Server(config)
@@ -178,17 +202,18 @@ async def run_verification(hops: int = 60, port: int = 8000, use_existing: bool 
     pcm_ok = sum(
         1
         for r in results_rx
-        if isinstance(r.get("pcm"), str) and len(base64.b64decode(r["pcm"])) == 16000
+        if isinstance(r.get("pcm"), str)
+        and len(base64.b64decode(r["pcm"])) == int(r.get("samples", 0)) * 2
+        and int(r.get("samples", 0)) >= 8000
     )
     hops_snap = m["hops"]
     pb = m["playback"]
 
-    # Read exact backend pre-send overhead (t_send - t_capture) for this session from logs/hops.jsonl
+    # Read exact backend pre-send overhead (t_send - t_capture) for this session from temp hops.jsonl
     pre_ms: list[float] = []
     gpu_rtt_vals: list[float] = []
-    hops_path = REPO_ROOT / "logs" / "hops.jsonl"
-    if hops_path.exists():
-        for line in hops_path.read_text(encoding="utf-8").splitlines():
+    if hops_log_path.exists():
+        for line in hops_log_path.read_text(encoding="utf-8").splitlines():
             try:
                 rec = json.loads(line)
             except Exception:
@@ -198,6 +223,8 @@ async def run_verification(hops: int = 60, port: int = 8000, use_existing: bool 
                     pre_ms.append(float(rec["t_send"]) - float(rec["t_capture"]))
                 if rec.get("gpu_rtt_ms") is not None:
                     gpu_rtt_vals.append(float(rec["gpu_rtt_ms"]))
+    if temp_dir_obj is not None:
+        temp_dir_obj.cleanup()
 
     print("\n=== E7 / E9 (AT4) Live Verification Summary ===")
     print(f"Hops sent:           {hops} ({hops * 0.5:.1f} s)")

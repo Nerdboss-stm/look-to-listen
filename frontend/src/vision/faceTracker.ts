@@ -519,7 +519,9 @@ export async function createFaceLandmarker(opts?: {
 }): Promise<FaceLandmarker> {
   const wasmPath = opts?.wasmPath ?? "/wasm";
   const modelAssetPath = opts?.modelAssetPath ?? "/models/face_landmarker.task";
-  const numFaces = opts?.numFaces ?? 4;
+  // Default 3 faces (Speakers A, B, C per DESIGN.md & AT1); avoids running full-frame
+  // BlazeFace search every frame looking for a 4th face when 3 speakers are tracked.
+  const numFaces = opts?.numFaces ?? 3;
 
   const vision = await FilesetResolver.forVisionTasks(wasmPath);
   const sharedOpts = {

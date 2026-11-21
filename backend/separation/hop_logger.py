@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import collections
 import json
+import os
 import threading
 import time
 from datetime import datetime, timezone
@@ -12,6 +13,13 @@ from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 HOPS_LOG_PATH = REPO_ROOT / "logs" / "hops.jsonl"
+
+
+def _default_hops_log_path() -> Path:
+    override = os.environ.get("L2L_LOG_DIR", "").strip()
+    if override:
+        return Path(override) / "hops.jsonl"
+    return HOPS_LOG_PATH
 
 
 def _percentile(values: list[float], p: float) -> float | None:
@@ -26,7 +34,7 @@ class HopLogger:
     """Thread-safe append-only writer for logs/hops.jsonl plus rolling p50/p95 stats."""
 
     def __init__(self, path: Path | None = None, window: int = 120) -> None:
-        self.path = path or HOPS_LOG_PATH
+        self.path = path or _default_hops_log_path()
         self._lock = threading.Lock()
         self._gpu_ms: collections.deque[float] = collections.deque(maxlen=window)
         self._queue_ms: collections.deque[float] = collections.deque(maxlen=window)

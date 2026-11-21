@@ -76,7 +76,9 @@ async function launchChrome(debugPort) {
       "--autoplay-policy=no-user-gesture-required",
       "--enable-webgl",
       "--ignore-gpu-blocklist",
+      "--use-gl=angle",
       "--use-angle=metal",
+      "--enable-gpu-rasterization",
       "--disable-background-timer-throttling",
       "--disable-renderer-backgrounding",
       "--disable-backgrounding-occluded-windows",
@@ -173,18 +175,12 @@ async function main() {
     });
     await sleep(800);
 
-    // Set up 1920x1080 30 fps real 3-face video source for getUserMedia and record exact constraints
+    // Set up single-decode 1920x1080 30 fps real 3-face video on camera-video (matching real webcam decode load)
     const setup = await cdp.evalJs(`(async () => {
-      const srcVid = document.createElement("video");
-      srcVid.src = "/__test_3faces_1080p.mp4";
-      srcVid.loop = true;
-      srcVid.muted = true;
-      srcVid.playsInline = true;
-      await srcVid.play();
-      while (srcVid.videoWidth === 0) {
-        await new Promise(r => setTimeout(r, 50));
-      }
-      const vStream = srcVid.captureStream ? srcVid.captureStream(30) : srcVid.mozCaptureStream(30);
+      const dummyCanvas = document.createElement("canvas");
+      dummyCanvas.width = 16;
+      dummyCanvas.height = 16;
+      const vStream = dummyCanvas.captureStream(1);
 
       const actx = new AudioContext({ sampleRate: 16000 });
       await actx.resume();
@@ -201,12 +197,23 @@ async function main() {
 
       document.getElementById("start-btn").click();
 
-      // Wait for real FaceLandmarker to load & detect all 3 real faces on the 1920x1080 stream
+      // Wait for startLiveCapture() to attach stream, then swap videoEl directly to the 1920x1080@30fps MP4
+      // so Chrome decodes ONE 1920x1080 stream (not two simultaneous 1080p streams + captureStream re-encode)
       const videoEl = document.getElementById("camera-video");
+      while (!window.__requestedConstraints) {
+        await new Promise(r => setTimeout(r, 50));
+      }
+      await new Promise(r => setTimeout(r, 300));
+      videoEl.srcObject = null;
+      videoEl.src = "/__test_3faces_1080p.mp4";
+      videoEl.loop = true;
+      await videoEl.play();
+
+      // Wait for real FaceLandmarker to detect all 3 real faces on the 1920x1080 stream
       for (let i = 0; i < 60; i++) {
         await new Promise(r => setTimeout(r, 100));
         const chips = document.querySelectorAll("#face-bar button[data-face]");
-        if (chips.length >= 3) break;
+        if (chips.length >= 3 && videoEl.videoWidth === 1920) break;
       }
 
       // Click consent on the center target face so ClearVoiceCropper cuts 25 fps lip crops from 1920x1080!
@@ -217,7 +224,12 @@ async function main() {
         if (chip) chip.click();
       }
 
+      const gl = document.createElement("canvas").getContext("webgl2");
+      const dbg = gl ? gl.getExtension("WEBGL_debug_renderer_info") : null;
+      const renderer = dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : "unknown";
+
       return {
+        webglRenderer: renderer,
         constraints: window.__requestedConstraints,
         videoDims: [videoEl.videoWidth, videoEl.videoHeight],
         initialFaces: document.querySelectorAll("#face-bar button[data-face]").length,

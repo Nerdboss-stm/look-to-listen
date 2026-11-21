@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import threading
 from datetime import datetime, timezone
 from pathlib import Path
@@ -12,6 +13,21 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 LOGS_DIR = REPO_ROOT / "logs"
 CALLS_LOG = LOGS_DIR / "calls.jsonl"
 AGENT_LOG = LOGS_DIR / "agent.jsonl"
+
+
+def get_logs_dir() -> Path:
+    override = os.getenv("LOOK_TO_LISTEN_LOGS_DIR")
+    return Path(override) if override else LOGS_DIR
+
+
+def get_calls_log_path() -> Path:
+    override = os.getenv("LOOK_TO_LISTEN_LOGS_DIR")
+    return (Path(override) / "calls.jsonl") if override else CALLS_LOG
+
+
+def get_agent_log_path() -> Path:
+    override = os.getenv("LOOK_TO_LISTEN_LOGS_DIR")
+    return (Path(override) / "agent.jsonl") if override else AGENT_LOG
 
 _LOCK = threading.Lock()
 
@@ -82,7 +98,7 @@ def log_model_call(
         rec["error"] = error
     if extra:
         rec["extra"] = extra
-    _append_jsonl(CALLS_LOG, rec)
+    _append_jsonl(get_calls_log_path(), rec)
     return rec
 
 
@@ -103,5 +119,5 @@ def log_agent_event(
         "reason": reason,
         "details": details or {},
     }
-    _append_jsonl(AGENT_LOG, rec)
+    _append_jsonl(get_agent_log_path(), rec)
     return rec

@@ -134,7 +134,7 @@ export class ClearVoiceCropper {
     this.resizeCanvas = document.createElement("canvas");
     this.resizeCanvas.width = RESIZE_DIM;
     this.resizeCanvas.height = RESIZE_DIM;
-    const rCtx = this.resizeCanvas.getContext("2d", { willReadFrequently: true });
+    const rCtx = this.resizeCanvas.getContext("2d", { alpha: false });
     if (!rCtx) throw new Error("Failed to create 224x224 2D context");
     rCtx.imageSmoothingEnabled = true;
     rCtx.imageSmoothingQuality = "high";
@@ -143,8 +143,10 @@ export class ClearVoiceCropper {
     this.cropCanvas = document.createElement("canvas");
     this.cropCanvas.width = CROP_DIM;
     this.cropCanvas.height = CROP_DIM;
-    const cCtx = this.cropCanvas.getContext("2d", { willReadFrequently: true });
+    const cCtx = this.cropCanvas.getContext("2d", { alpha: false });
     if (!cCtx) throw new Error("Failed to create 112x112 2D context");
+    cCtx.imageSmoothingEnabled = true;
+    cCtx.imageSmoothingQuality = "high";
     this.cropCtx = cCtx;
   }
 
@@ -184,7 +186,7 @@ export class ClearVoiceCropper {
     this.lastSourceDims = [frameW, frameH];
     this.lastSourceCropPx = Math.round(rect.size);
 
-    // 1. Zero-padded 224x224 crop
+    // 1. Zero-padded 224x224 crop from full-resolution source (e.g. 1920x1080) on GPU
     this.resizeCtx.fillStyle = "#000000";
     this.resizeCtx.fillRect(0, 0, RESIZE_DIM, RESIZE_DIM);
     this.resizeCtx.drawImage(
@@ -199,26 +201,23 @@ export class ClearVoiceCropper {
       rect.dstH
     );
 
-    // 2. Center crop 112x112 directly from [56..168) x [56..168)
-    const centerImg = this.resizeCtx.getImageData(
+    // 2. GPU-accelerated center crop 112x112 ([56..168) x [56..168)) + grayscale conversion
+    // (avoids synchronous getImageData GPU->CPU readback stall at 1080p)
+    this.cropCtx.filter = "grayscale(1)";
+    this.cropCtx.drawImage(
+      this.resizeCanvas,
       CENTER_OFFSET,
       CENTER_OFFSET,
       CROP_DIM,
+      CROP_DIM,
+      0,
+      0,
+      CROP_DIM,
       CROP_DIM
     );
+    this.cropCtx.filter = "none";
 
-    // 3. Convert to grayscale in-place (BT.601 luma)
-    const d = centerImg.data;
-    for (let i = 0; i < d.length; i += 4) {
-      const y = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) | 0;
-      d[i] = y;
-      d[i + 1] = y;
-      d[i + 2] = y;
-      d[i + 3] = 255;
-    }
-    this.cropCtx.putImageData(centerImg, 0, 0);
-
-    // 4. Encode as JPEG and strip "data:image/jpeg;base64,"
+    // 3. Encode as JPEG and strip "data:image/jpeg;base64,"
     const dataUrl = this.cropCanvas.toDataURL("image/jpeg", this.jpegQuality);
     const commaIdx = dataUrl.indexOf(",");
     return commaIdx >= 0 ? dataUrl.slice(commaIdx + 1) : dataUrl;

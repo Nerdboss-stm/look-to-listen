@@ -27,7 +27,7 @@ from agent_env.hooks.gate_command import check_command_payload
 from agent_env.hooks.gate_privacy import check_privacy_payload
 from agent_env.hooks.gate_release import check_release_payload
 from backend.gemini.client import MODELS, get_api_key
-from backend.gemini.logger import AGENT_LOG, log_agent_event, log_model_call
+from backend.gemini.logger import get_agent_log_path, log_agent_event, log_model_call
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 AGENT_ENV_DIR = REPO_ROOT / "agent_env"
@@ -52,9 +52,10 @@ def _scrub(text: str, secret: str) -> str:
 
 def _append_rich_agent_event(event: dict[str, Any]) -> dict[str, Any]:
     """Append an event matching S1/S2's AGENT stream schema to logs/agent.jsonl."""
-    AGENT_LOG.parent.mkdir(parents=True, exist_ok=True)
+    path = get_agent_log_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
     rec = {"time": datetime.now(timezone.utc).isoformat(), **event}
-    with AGENT_LOG.open("a", encoding="utf-8") as f:
+    with path.open("a", encoding="utf-8") as f:
         f.write(json.dumps(rec, ensure_ascii=False) + "\n")
     return rec
 

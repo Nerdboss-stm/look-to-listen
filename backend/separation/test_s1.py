@@ -27,6 +27,56 @@ from backend.store.clips import ClipStore, ConsentDeniedError
 from backend.store.consent import ConsentStore
 from backend.store.end_card import build_end_card_data
 
+REPO_ROOT = Path(__file__).resolve().parents[2]
+LIVE_LOGS_DIR = REPO_ROOT / "logs"
+
+
+@pytest.fixture(autouse=True)
+def _isolate_all_logs(tmp_path: Path, monkeypatch):
+    """Guarantee no test ever writes to logs/agent.jsonl or logs/hops.jsonl."""
+    import backend.main as main_mod
+    import backend.separation.hop_logger as hop_logger_mod
+    import backend.store.clips as clips_mod
+
+    live_agent = LIVE_LOGS_DIR / "agent.jsonl"
+    live_hops = LIVE_LOGS_DIR / "hops.jsonl"
+    before_agent = live_agent.stat().st_size if live_agent.exists() else None
+    before_hops = live_hops.stat().st_size if live_hops.exists() else None
+
+    temp_log_dir = tmp_path / "test_logs"
+    temp_log_dir.mkdir(parents=True, exist_ok=True)
+    temp_agent = temp_log_dir / "agent.jsonl"
+    temp_hops = temp_log_dir / "hops.jsonl"
+
+    monkeypatch.setenv("L2L_LOG_DIR", str(temp_log_dir))
+    monkeypatch.setattr(clips_mod, "AGENT_LOG_PATH", temp_agent)
+    monkeypatch.setattr(hop_logger_mod, "HOPS_LOG_PATH", temp_hops)
+    monkeypatch.setattr(main_mod, "AGENT_LOG_PATH", temp_agent)
+
+    # Also redirect any S3 logger if loaded in-process
+    try:
+        import backend.gemini.logger as gemini_logger_mod
+
+        monkeypatch.setattr(gemini_logger_mod, "AGENT_LOG", temp_agent)
+        monkeypatch.setattr(gemini_logger_mod, "CALLS_LOG", temp_log_dir / "calls.jsonl")
+    except Exception:
+        pass
+
+    rt = main_mod.get_runtime()
+    orig_hop_path = rt.hop_logger.path
+    orig_clip_agent_log = rt.clips.agent_log_path
+    rt.hop_logger.path = temp_hops
+    rt.clips.agent_log_path = temp_agent
+    try:
+        yield temp_log_dir
+    finally:
+        rt.hop_logger.path = orig_hop_path
+        rt.clips.agent_log_path = orig_clip_agent_log
+        after_agent = live_agent.stat().st_size if live_agent.exists() else None
+        after_hops = live_hops.stat().st_size if live_hops.exists() else None
+        assert after_agent == before_agent, "Test wrote to live logs/agent.jsonl!"
+        assert after_hops == before_hops, "Test wrote to live logs/hops.jsonl!"
+
 
 def test_binary_hop_packing_roundtrip():
     pcm = (np.arange(8000, dtype=np.int16) % 1000).tobytes()

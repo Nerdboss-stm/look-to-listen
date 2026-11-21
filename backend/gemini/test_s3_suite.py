@@ -19,11 +19,24 @@ sys.path.insert(0, str(REPO_ROOT))
 from agent_env.hooks.gate_command import check_command_payload, evaluate_hook as eval_cmd_hook
 from agent_env.hooks.gate_privacy import check_privacy_payload, evaluate_hook as eval_priv_hook
 from agent_env.hooks.gate_release import check_release_payload, evaluate_hook as eval_rel_hook
+from backend.gemini import logger as gemini_logger
 from backend.gemini.argon import ConversationMemory
 from backend.gemini.decisions import LeakageGuard, SpeakingDecisionClient
 from backend.gemini.managed_agent import ListenerAgentService
 from backend.gemini.vocab import get_vocab_terms, register_consenting_speaker, remove_speaker_vocab
 from backend.robot.pointing import parse_pointing_json
+
+
+@pytest.fixture(autouse=True)
+def _isolate_logs_to_tmp(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Guarantee S3 tests NEVER write to repo logs/agent.jsonl, logs/calls.jsonl, or logs/hops.jsonl."""
+    tmp_logs = tmp_path / "logs"
+    tmp_logs.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("LOOK_TO_LISTEN_LOGS_DIR", str(tmp_logs))
+    monkeypatch.setattr(gemini_logger, "LOGS_DIR", tmp_logs)
+    monkeypatch.setattr(gemini_logger, "CALLS_LOG", tmp_logs / "calls.jsonl")
+    monkeypatch.setattr(gemini_logger, "AGENT_LOG", tmp_logs / "agent.jsonl")
+    return tmp_logs
 
 
 def test_leakage_guard_drops_when_target_silent_and_passes_when_speaking():
@@ -217,3 +230,32 @@ def test_live_captioner_constants_and_argon_thinking_level():
 
     neon_src = (REPO_ROOT / "backend/gemini/neon.py").read_text(encoding="utf-8")
     assert "timeout_ms=25000" in neon_src
+
+
+def test_hooks_write_only_to_temp_log_dir(_isolate_logs_to_tmp: Path):
+    """Verify running all 3 hooks writes to temp logs, leaving repo logs/ untouched."""
+    repo_logs = REPO_ROOT / "logs"
+    before = {
+        name: (repo_logs / name).stat().st_size if (repo_logs / name).exists() else 0
+        for name in ("agent.jsonl", "hops.jsonl")
+    }
+    svc = ListenerAgentService()
+    svc.save_transcript_with_privacy_hook(
+        conversation_id="tmp-check",
+        lines=[{"face_id": "face-2", "text": "No consent"}],
+        consent_map={"face-2": False},
+        auto_redact_retry=False,
+    )
+    svc.check_robot_command(command_id="c1", face_id="face-2", target_face_id="face-1", text="Grab cup")
+    svc.release_config_with_regression_hook(
+        candidate_config={**svc.active_config, "config_id": "cfg-tmp"},
+        before_metrics={"leakage": 0.10, "wer": 0.15, "delay_p50_ms": 1200.0},
+        after_metrics={"leakage": 0.20, "wer": 0.15, "delay_p50_ms": 1200.0},
+    )
+    after = {
+        name: (repo_logs / name).stat().st_size if (repo_logs / name).exists() else 0
+        for name in ("agent.jsonl", "hops.jsonl")
+    }
+    assert after == before
+    tmp_agent_log = _isolate_logs_to_tmp / "agent.jsonl"
+    assert tmp_agent_log.exists() and tmp_agent_log.stat().st_size > 0

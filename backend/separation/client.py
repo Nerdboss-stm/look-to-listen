@@ -122,7 +122,7 @@ class SeparationClient:
         hop_timeout_s: float = 2.0,
         max_consecutive_timeouts: int = 3,
         failover_timeout_s: float = 3.0,
-        connect_timeout_s: float = 1.5,
+        connect_timeout_s: float = 3.0,
         probe_interval_s: float = 2.0,
         recovery_probes_required: int = 2,
         max_inflight: int = 4,

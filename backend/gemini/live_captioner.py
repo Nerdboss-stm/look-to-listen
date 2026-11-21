@@ -40,7 +40,7 @@ ROTATE_AFTER_S = 200.0          # Proactively rotate before ~243 s 1011 session 
 ROTATE_OVERLAP_MIN_S = 1.0      # Minimum dual-feed overlap before handoff
 ROTATE_HANDOFF_WAIT_S = 4.0     # Wait for warming session's first caption before silencing old
 CONNECT_TIMEOUT_S = 6.0         # Bounded WebSocket handshake timeout
-WS_PING_INTERVAL_S = 5.0        # Transport-level WebSocket ping cadence
+WS_PING_INTERVAL_S = 10.0       # Transport-level WebSocket ping cadence
 WS_PONG_TIMEOUT_S = 10.0        # Restart ONLY if the socket itself fails to pong within 10 s
 LIVE_RETRY_INTERVAL_S = 10.0    # Retry Live every 10 s while in FB5 fallback
 FB5_HTTP_TIMEOUT_MS = 10000     # 10 s (server rejects <10 s deadline; stops 894 s TCP hangs)
@@ -135,7 +135,7 @@ class _LiveSessionHandle:
     async def send_pcm16(self, pcm: bytes) -> None:
         if self.closed:
             return
-        frame_bytes = 3200  # 100 ms @ 16 kHz mono int16
+        frame_bytes = 8000  # 250 ms @ 16 kHz mono int16 (reduces WS frame churn on venue Wi-Fi)
         for i in range(0, len(pcm), frame_bytes):
             chunk = pcm[i : i + frame_bytes]
             if chunk:

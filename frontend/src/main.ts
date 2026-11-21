@@ -612,14 +612,16 @@ function frameLoop(): void {
   const nowWall = Date.now();
   const videoReady = videoEl.readyState >= 2 && videoEl.videoWidth > 0;
 
+  let ranDetectThisTick = false;
   if (landmarker && videoReady && videoEl.currentTime !== lastVideoTime) {
     lastVideoTime = videoEl.currentTime;
+    ranDetectThisTick = true;
     const detectTs = Math.max(lastDetectTimestampMs + 1, Math.round(nowPerf));
     lastDetectTimestampMs = detectTs;
     try {
-      const targetDetW = 640;
+      const targetDetW = 512;
       const targetDetH = Math.max(
-        240,
+        224,
         Math.round((videoEl.videoHeight / videoEl.videoWidth) * targetDetW)
       );
       if (detectCanvas.width !== targetDetW || detectCanvas.height !== targetDetH) {
@@ -641,8 +643,7 @@ function frameLoop(): void {
   if (landmarker && videoReady) {
     const consentedTarget = syncConsentedTargetState();
 
-    // Sample ClearVoice crops at steady 25 fps (every 40 ms) even if camera auto-exposure
-    // drops below 25 fps or target is held during a <= 1 s brief loss
+    // Cut ClearVoice lip crops directly from the full-resolution 1920x1080 videoEl at 25 fps
     if (consentedTarget && hopPacker.shouldSampleTargetCrop(nowPerf)) {
       const b64 = cropper.extractBase64Jpeg(
         videoEl,
@@ -652,17 +653,20 @@ function frameLoop(): void {
       if (b64) hopPacker.pushTargetCrop(b64, nowPerf, consentedTarget.id);
     }
 
-    if (hopPacker.shouldSampleOtherCrops(nowPerf)) {
-      for (const f of latestFaces) {
-        if (!f.consent.given || f.id === consentedTarget?.id) continue;
-        const b64 = cropper.extractBase64Jpeg(videoEl, f.id, f.box);
-        if (b64) hopPacker.pushOtherCrop(f.id, b64, nowPerf);
+    // Stagger secondary JPEG encodes off detection ticks when possible to keep frame times flat
+    if (!ranDetectThisTick || nowPerf - lastFrameCaptureMs >= 650) {
+      if (hopPacker.shouldSampleOtherCrops(nowPerf)) {
+        for (const f of latestFaces) {
+          if (!f.consent.given || f.id === consentedTarget?.id) continue;
+          const b64 = cropper.extractBase64Jpeg(videoEl, f.id, f.box);
+          if (b64) hopPacker.pushOtherCrop(f.id, b64, nowPerf);
+        }
       }
-    }
 
-    if (nowPerf - lastFrameCaptureMs >= 480) {
-      lastFrameCaptureMs = nowPerf;
-      latestFrameJpeg = captureFullFrameBase64();
+      if (nowPerf - lastFrameCaptureMs >= 520) {
+        lastFrameCaptureMs = nowPerf;
+        latestFrameJpeg = captureFullFrameBase64();
+      }
     }
   }
 
