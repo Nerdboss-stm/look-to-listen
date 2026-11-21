@@ -201,5 +201,5 @@ def build_end_card_data(repo_root: Path | None = None) -> dict[str, Any]:
             "hops_logged": hops_stats["hops_logged"],
         },
         "where_it_breaks": slices,
-        "repo_url": os.environ.get("REPO_URL", "https://github.com/saran/look-to-listen"),
+        "repo_url": os.environ.get("REPO_URL", "https://github.com/Nerdboss-stm/look-to-listen"),
     }
